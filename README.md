@@ -1,4 +1,0 @@
-faces
-=====
-
-Thesis project
