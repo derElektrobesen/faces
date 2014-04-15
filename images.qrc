@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/widgets/images/gloss.png</file>
+        <file>qml/widgets/images/lineedit.png</file>
+        <file>qml/widgets/images/lineedit.sci</file>
+        <file>qml/widgets/images/loading.png</file>
+        <file>qml/widgets/images/quit.png</file>
+        <file>qml/widgets/images/stripes.png</file>
+        <file>qml/widgets/images/titlebar.png</file>
+        <file>qml/widgets/images/titlebar.sci</file>
+        <file>qml/widgets/images/toolbutton.png</file>
+        <file alias="toolbutton">qml/widgets/images/toolbutton.sci</file>
+        <file>qml/widgets/BtnGradient.qml</file>
+    </qresource>
+</RCC>

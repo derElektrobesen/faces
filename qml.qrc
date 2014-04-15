@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="main.qml">qml/main.qml</file>
+    </qresource>
+    <qresource prefix="/widgets">
+        <file alias="BtnGradient.qml">qml/widgets/BtnGradient.qml</file>
+        <file alias="Button.qml">qml/widgets/Button.qml</file>
+        <file alias="BtnGroup.qml">qml/widgets/BtnGroup.qml</file>
+        <file alias="PhotoPanel.qml">qml/widgets/PhotoPanel.qml</file>
+    </qresource>
+    <qresource prefix="/images">
+        <file alias="stripes.png">qml/widgets/images/stripes.png</file>
+    </qresource>
+</RCC>
