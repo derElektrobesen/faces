@@ -4,16 +4,21 @@ Item {
     id: container
 
     property int margin: 3
+    property int padding: 3
     property string btn_1_text: "Button 1"
     property string btn_2_text: "Button 2"
+    property int text_size: 20
 
-    width: parent.width - 6
+    signal btn_1_pressed
+    signal btn_2_pressed
+
+    width: parent.width - 2 * padding
     height: 40
 
     anchors.horizontalCenter: parent.horizontalCenter
 
-    x: margin
-    y: parent.height - height - margin
+    x: padding
+    y: parent.height - height - padding
 
     Rectangle {
         width: parent.width
@@ -33,10 +38,17 @@ Item {
 
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: margin
+
         width: parent.width / 2 - 2 * margin
+        height: parent.height - 2 * margin
         x: margin
 
         text: btn_1_text
+        text_size: text_size
+
+        onClicked: {
+            container.btn_1_pressed()
+        }
     }
 
     Button {
@@ -48,7 +60,13 @@ Item {
         anchors.left: btn_1.right
 
         width: parent.width / 2 - 2 * margin
+        height: parent.height - 2 * margin
 
         text: btn_2_text
+        text_size: text_size
+
+        onClicked: {
+            container.btn_2_pressed()
+        }
     }
 }

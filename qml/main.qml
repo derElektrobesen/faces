@@ -4,6 +4,9 @@ import QtQuick.Window 2.1
 import "widgets"
 
 Window {
+    property int text_size: 23
+    property int padding: 5
+
     id: main_window
     visible: true
     width: 300
@@ -20,9 +23,24 @@ Window {
 
     PhotoPanel {
         id: photo_panel
+        bottom_anchor: buttons.height + padding
+        padding: padding
     }
 
     BtnGroup {
         id: buttons
+        height: parent.height / 10
+        text_size: text_size
+        margin: parent.height / 60
+        padding: padding
+        btn_1_text: "Take photo"
+        btn_2_text: "Close"
+
+        onBtn_1_pressed: {
+            photo_panel.take_photo()
+        }
+        onBtn_2_pressed: {
+            Qt.quit()
+        }
     }
 }

@@ -1,10 +1,13 @@
 import QtQuick 2.0
 import QtMultimedia 5.0
 
+import com.ics.faces 1.0
+
 Item {
     id: container
 
     property int margin: 3
+    property int padding: 3
     property int bottom_anchor: 40
 
     anchors.horizontalCenter: parent.horizontalCenter
@@ -12,8 +15,17 @@ Item {
     x: margin
     y: margin
 
-    width: parent.width - 2 * margin
-    height: parent.height - 3 * margin - bottom_anchor
+    width: parent.width - 2 * padding
+    height: parent.height - 2 * padding - bottom_anchor
+
+    function take_photo() {
+        camera.imageCapture.capture()
+    }
+
+    function set_photo(img_id) {
+        console.log("Set photo: " + img_id);
+        photoPreview.source = "image://processed_images/" + img_id;
+    }
 
     Rectangle {
         width: container.width
@@ -42,7 +54,8 @@ Item {
 
         imageCapture {
             onImageCaptured: {
-                photoPreview.source = preview  // Show the preview in an Image
+                set_photo(preview.split("/").slice(-1)[0]);
+                imageProcessor.process_image(preview);
             }
         }
     }
@@ -51,6 +64,10 @@ Item {
         source: camera
         anchors.fill: parent
         focus : visible // to receive focus and capture key events when visible
+
+        height: parent.height - 2 * margin
+        width: parent.width - 2 * margin
+        fillMode: Image.PreserveAspectCrop
     }
 
     Image {
@@ -63,5 +80,12 @@ Item {
         width: parent.width - 2 * margin
 
         fillMode: Image.PreserveAspectCrop
+    }
+
+    ImageProcessor {
+        id: imageProcessor
+        onImageChanged: {
+            set_photo(imageId);
+        }
     }
 }

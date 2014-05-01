@@ -4,7 +4,7 @@ Item {
     id: container
 
     property string text: "Button text"
-    property int text_size: 15
+    property int text_size: 20
 
     signal clicked
 
