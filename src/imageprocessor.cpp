@@ -18,30 +18,29 @@ void ImageProcessor::process_image(const QString &path) {
 
     QSize imageSize;
     QString imageId = imageUrl.path().remove(0,1);
-    QImage image = imageProvider->requestImage(imageId, &imageSize, imageSize);
-    if (!image.isNull()) {
+    ImagePtr image(new QImage(imageProvider->requestImage(imageId, &imageSize, imageSize)));
+    if (!image->isNull()) {
         set_image(imageId, image);
     }
 
     recognize(imageId, image);
 }
 
-void ImageProcessor::set_image(const QString &imageId, QImage &img) {
+void ImageProcessor::set_image(const QString &imageId, const ImageConstPtr &img) {
     img_provider.set_new_image(imageId, img);
     emit imageChanged(imageId);
 }
 
-void ImageProcessor::recognize(const QString &imageId, QImage &img) {
-    QPainter painter;
+ImagePtr ImageProcessor::search_face(const QImage &img) const {
+    Q_UNUSED(img);  /* TODO */
+    return ImagePtr(new QImage());
+}
 
-    img.fill(Qt::red);
+ImagePtr ImageProcessor::recognize_face(const QImage &img) const {
+    Q_UNUSED(img);  /* TODO */
+    return ImagePtr(new QImage());
+}
 
-    painter.begin(&img);
-    painter.setBrush(Qt::black);
-    painter.fillRect(10, 10, 100, 100, Qt::SolidPattern);
-    painter.end();
-
-    qDebug() << img.rect();
-
+void ImageProcessor::recognize(const QString &imageId, const ImageConstPtr &img) {
     set_image(imageId + "_recognized", img);
 }

@@ -5,8 +5,13 @@ ImageProvider::ImageProvider(ImageType type, Flags flags) :
 {
 }
 
-void ImageProvider::set_new_image(const QString &id, const QImage &image) {
+void ImageProvider::set_new_image(const QString &id, const ImageConstPtr &image) {
     images[ id ] = qMakePair(image, time(NULL));
+
+    if (image->isNull()) {
+        qDebug() << "Incorrect image given:" << id;
+        return;
+    }
 
     if (images.size() > MAX_IMAGES_COUNT) {
         auto it = images.constBegin();
@@ -26,7 +31,7 @@ QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &
     Q_UNUSED(size);
     Q_UNUSED(requestedSize);
 
-    qDebug() << "ImageProvider!!!";
-
-    return images[ id ].first;
+    if (images.contains(id))
+        return *(images[ id ].first);
+    return QImage();
 }

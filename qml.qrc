@@ -1,14 +1,19 @@
 <RCC>
     <qresource prefix="/">
         <file alias="main.qml">qml/main.qml</file>
+        <file alias="main_with_learning.qml">qml/main_with_learning.qml</file>
     </qresource>
     <qresource prefix="/widgets">
         <file alias="BtnGradient.qml">qml/widgets/BtnGradient.qml</file>
         <file alias="Button.qml">qml/widgets/Button.qml</file>
         <file alias="BtnGroup.qml">qml/widgets/BtnGroup.qml</file>
         <file alias="PhotoPanel.qml">qml/widgets/PhotoPanel.qml</file>
+        <file alias="TrainingPicture.qml">qml/widgets/TrainingPicture.qml</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="stripes.png">qml/widgets/images/stripes.png</file>
+    </qresource>
+    <qresource prefix="/assets">
+        <file alias="faces.db3">assets/faces.db3</file>
     </qresource>
 </RCC>
