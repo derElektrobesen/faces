@@ -87,8 +87,6 @@ n=0 это chapter.
 \newcommand{\src}[1]{\linuxcommand{#1}}
 \newcommand{\key}[1]{\src{<#1>}}
 
-\bibliographystyle{plain}
-
 \begin{document}
 	\input{titlepage}
 	\tableofcontents
@@ -101,7 +99,8 @@ n=0 это chapter.
 %	\input{conclusion}
 %	\input{appendix}
 	\newpage
-%	\addcontentsline{toc}{section}{\bibname}
-%	\nocite{*}
-%	\bibliography{biblio}
+    \bibliographystyle{plain}
+	\addcontentsline{toc}{section}{\bibname}
+	\nocite{*}
+	\bibliography{biblio}
 \end{document}

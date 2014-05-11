@@ -6,12 +6,12 @@ ImageProvider::ImageProvider(ImageType type, Flags flags) :
 }
 
 void ImageProvider::set_new_image(const QString &id, const ImageConstPtr &image) {
-    images[ id ] = qMakePair(image, time(NULL));
-
     if (image->isNull()) {
         qDebug() << "Incorrect image given:" << id;
         return;
     }
+
+    images[ id ] = qMakePair(image, time(NULL));
 
     if (images.size() > MAX_IMAGES_COUNT) {
         auto it = images.constBegin();
