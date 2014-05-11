@@ -19,7 +19,12 @@ Item {
     height: parent.height - 2 * padding - bottom_anchor
 
     function take_photo() {
-        camera.imageCapture.capture()
+        if (imageProcessor.can_capture())
+            camera.imageCapture.capture();
+        else {
+            imageProcessor.set_random_image();
+            imageProcessor.recognize();
+        }
     }
 
     function set_photo(img_id) {

@@ -9,6 +9,8 @@
 
 #include "imageprovider.h"
 #include "main.h"
+#include "databaseengine.h"
+#include "facerecognizer.h"
 
 #define PROVIDER_HOST   "processed_images"
 
@@ -23,6 +25,9 @@ signals:
 
 public slots:
     void process_image(const QString &path);
+    bool can_capture();
+    void set_random_image();
+    void recognize();
 
 protected:
     void recognize(const QString &imageId, const ImageConstPtr &img);
@@ -30,8 +35,13 @@ protected:
     ImagePtr recognize_face(const QImage &img) const;
     void set_image(const QString &imageId, const ImageConstPtr &img);
 
+    void register_provider();
+
 private:
     ImageProvider img_provider;
+    QString last_path;
+
+    FaceRecognizer recognizer;
 
 };
 

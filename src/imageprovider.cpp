@@ -35,3 +35,9 @@ QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &
         return *(images[ id ].first);
     return QImage();
 }
+
+const ImageConstPtr &ImageProvider::get_image(const QString &id) {
+    if (images.contains(id))
+        return images[ id ].first;
+    return NULL;
+}

@@ -10,8 +10,7 @@ void ImageProcessor::process_image(const QString &path) {
     QUrl imageUrl(path);
     QQmlEngine* engine = QQmlEngine::contextForObject(this)->engine();
 
-    if (!engine->imageProvider(PROVIDER_HOST))
-        engine->addImageProvider(PROVIDER_HOST, &img_provider);
+    register_provider();
 
     QQmlImageProviderBase* imageProviderBase = engine->imageProvider(imageUrl.host());
     QQuickImageProvider* imageProvider = static_cast< QQuickImageProvider * >(imageProviderBase);
@@ -26,9 +25,40 @@ void ImageProcessor::process_image(const QString &path) {
     recognize(imageId, image);
 }
 
+bool ImageProcessor::can_capture() {
+#ifdef CAMERA_ENABLED
+    return true;
+#else
+    return false;
+#endif
+}
+
+void ImageProcessor::set_random_image() {
+    DECLARE_SQL_CON(q);
+    q.exec("select id, name from test_images order by random() limit 1");
+    q.next();
+
+    register_provider();
+
+    ImagePtr img(new QImage(q.value(1).toString()));
+    set_image((last_path = q.value(0).toString()), img);
+    q.finish();
+}
+
+void ImageProcessor::recognize() {
+    recognize(last_path, img_provider.get_image(last_path));
+}
+
 void ImageProcessor::set_image(const QString &imageId, const ImageConstPtr &img) {
     img_provider.set_new_image(imageId, img);
     emit imageChanged(imageId);
+}
+
+void ImageProcessor::register_provider() {
+    QQmlEngine* engine = QQmlEngine::contextForObject(this)->engine();
+
+    if (!engine->imageProvider(PROVIDER_HOST))
+        engine->addImageProvider(PROVIDER_HOST, &img_provider);
 }
 
 ImagePtr ImageProcessor::search_face(const QImage &img) const {
@@ -42,5 +72,7 @@ ImagePtr ImageProcessor::recognize_face(const QImage &img) const {
 }
 
 void ImageProcessor::recognize(const QString &imageId, const ImageConstPtr &img) {
-    set_image(imageId + "_recognized", img);
+    ImagePtr ptr(new QImage());
+    recognizer.recognize(*img, *ptr);
+    set_image(imageId + "_recognized", ptr);
 }

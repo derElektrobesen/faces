@@ -18,6 +18,7 @@ public:
     explicit ImageProvider(ImageType type, Flags flags = 0);
     virtual void set_new_image(const QString &id, const ImageConstPtr &image);
     virtual QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
+    const ImageConstPtr &get_image(const QString &id);
 
 signals:
 

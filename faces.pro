@@ -2,11 +2,12 @@ VERSION=1.0.0
 VERSTR='\\"$${VERSION}\\"'
 DB_F_NAME="faces.db3"
 
-LEARNING_MODE=1
+LEARNING_MODE=
 
 DEFINES += \
     VER=\"$${VERSTR}\" \
     CLEAN_DB \
+    DEBUG
 
 include(rules.pri)
 
@@ -18,7 +19,8 @@ android {
 
     LIBS += -L/usr/lib32/
 
-    DEFINES += WORK_DIR='\\"/sdcard/.faces\\"'
+    DEFINES += WORK_DIR='\\"/sdcard/.faces\\"' \
+        CAMERA_ENABLED
 }
 
 linux {
@@ -45,11 +47,15 @@ INCLUDEPATH += include
 HEADERS += \
     include/databaseengine.h \
     include/main.h \
-    include/imageprovider.h
+    include/imageprovider.h \
+    include/facerecognizer.h \
+    include/haarcascade.h
 
 SOURCES += src/main.cpp \
     src/databaseengine.cpp \
-    src/imageprovider.cpp
+    src/imageprovider.cpp \
+    src/facerecognizer.cpp \
+    src/haarcascade.cpp
 
 OTHER_FILES += \
     rules.pri
