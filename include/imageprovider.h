@@ -9,23 +9,21 @@
 
 #define MAX_IMAGES_COUNT    10
 
-typedef std::shared_ptr< QImage > ImagePtr;
-typedef std::shared_ptr< const QImage > ImageConstPtr;
-
 class ImageProvider : public QQuickImageProvider
 {
 public:
     explicit ImageProvider(ImageType type, Flags flags = 0);
-    virtual void set_new_image(const QString &id, const ImageConstPtr &image);
+    ~ImageProvider();
+    virtual void set_new_image(const QString &id, const QImage &image);
     virtual QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
-    const ImageConstPtr &get_image(const QString &id);
+    const QImage &get_image(const QString &id);
 
 signals:
 
 public slots:
 
 private:
-    QMap< QString, QPair< ImageConstPtr, time_t > > images;
+    QMap< QString, QPair< QImage, time_t > > images;
 
 };
 

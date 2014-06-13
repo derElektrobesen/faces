@@ -12,6 +12,7 @@
 \usepackage{indentfirst}
 \usepackage{scrextend}
 \usepackage{fancyhdr}
+\newcommand*\rot{\rotatebox{90}}
 
 \usepackage{xr}
 \usepackage{verbatimbox}
@@ -48,6 +49,8 @@
 \geometry{bottom=3cm}% нижнее поле
 
 \usepackage{perpage}
+\usepackage{placeins} % for float barriers
+\usepackage{float}
 \MakePerPage{footnote}
 
 \setcounter{tocdepth}{2}
@@ -90,6 +93,8 @@ n=0 это chapter.
 \begin{document}
 	\input{titlepage}
 	\tableofcontents
+    \newpage
+    \input{economic}
 	\newpage
     \input{bjd}
 %	\input{intro}	
@@ -100,7 +105,7 @@ n=0 это chapter.
 %	\input{appendix}
 	\newpage
     \bibliographystyle{plain}
-	\addcontentsline{toc}{section}{\bibname}
-	\nocite{*}
-	\bibliography{biblio}
+	%\addcontentsline{toc}{section}{\bibname}
+	%\nocite{*}
+	%\bibliography{biblio}
 \end{document}

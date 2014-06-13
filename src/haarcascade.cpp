@@ -1,11 +1,12 @@
-#include "haarcascade.h"
+ #include "haarcascade.h"
 
 HaarCascade::HaarCascade(QObject *parent) :
     QObject(parent),
     features(NULL),
     stages(NULL),
     nodes(NULL),
-    rects(NULL)
+    rects(NULL),
+    n_stages(0)
 {}
 
 HaarCascade::~HaarCascade() {
@@ -19,8 +20,8 @@ bool HaarCascade::init_memory() {
     DECLARE_SQL_CON(q);
     int count;
 
-#define READ_COUNT(table) \
-        if (!q.exec("select count(*) from " table)) \
+#define READ_COUNT(__table__) \
+        if (!q.exec("select count(*) from " __table__)) \
             return false; \
         q.next(); \
         count = q.value(0).toInt(); \
@@ -31,6 +32,7 @@ bool HaarCascade::init_memory() {
 
     READ_COUNT("stages")
     stages = new stage [count];
+    n_stages = count;
 
     READ_COUNT("nodes")
     nodes = new node [count];
@@ -48,6 +50,7 @@ bool HaarCascade::load_data() {
     int index = 1;
     QMap< int, int > l_features;
     QMap< int, int > l_stages;
+    QMap< int, int > l_nodes;
 
 #define EXEC(query) \
         if (!index) return false; /* No data loaded */ \
@@ -77,18 +80,30 @@ bool HaarCascade::load_data() {
         else
             stages[index].parent = NULL;
 
+        stages[index].nodes_count = 0;
+        stages[index].nodes_ptr = NULL;
+
         stages[index++].threshold = q.value(1).toDouble();
     }
     q.finish();
 
     EXEC("select feature_id, stage_id, threshold, left_val, right_val from nodes order by id");
     while (q.next()) {
-        nodes[index].feature = l_features[q.value(0).toInt()];
-        nodes[index].node_stage = stages + l_stages[q.value(1).toInt()];
+        stage *stage_ptr = stages + l_stages[q.value(1).toInt()];
 
+        nodes[index].tilted = features[ l_features[q.value(0).toInt()] ];
         nodes[index].threshold = q.value(2).toDouble();
         nodes[index].left_val = q.value(3).toDouble();
         nodes[index].right_val = q.value(4).toDouble();
+
+        nodes[index].rects_ptr = NULL;
+        nodes[index].rects_count = 0;
+
+        if (!stage_ptr->nodes_ptr)
+            stage_ptr->nodes_ptr = nodes + index;
+        stage_ptr->nodes_count++;
+
+        l_nodes.insert(q.value(0).toInt(), index);
 
         index++;
     }
@@ -96,12 +111,16 @@ bool HaarCascade::load_data() {
 
     EXEC("select feature_id, x, y, width, height, weight from rects");
     while (q.next()) {
-        rects[index].feature = l_features[q.value(0).toInt()];
+        node *node_ptr = nodes + l_nodes[q.value(0).toInt()];
         rects[index].x = q.value(1).toInt();
         rects[index].y = q.value(2).toInt();
         rects[index].width = q.value(3).toInt();
         rects[index].height = q.value(4).toInt();
         rects[index].weight = q.value(5).toFloat();
+
+        if (!node_ptr->rects_ptr)
+            node_ptr->rects_ptr = rects + index;
+        node_ptr->rects_count++;
 
         index++;
     }

@@ -2,16 +2,17 @@
 
 ImageProvider::ImageProvider(ImageType type, Flags flags) :
     QQuickImageProvider(type, flags)
-{
-}
+{}
 
-void ImageProvider::set_new_image(const QString &id, const ImageConstPtr &image) {
-    if (image->isNull()) {
+ImageProvider::~ImageProvider() {}
+
+void ImageProvider::set_new_image(const QString &id, const QImage &image) {
+    if (image.isNull()) {
         qDebug() << "Incorrect image given:" << id;
         return;
     }
 
-    images[ id ] = qMakePair(image, time(NULL));
+    images[ id ] = qMakePair(QImage(image), time(NULL));
 
     if (images.size() > MAX_IMAGES_COUNT) {
         auto it = images.constBegin();
@@ -32,12 +33,13 @@ QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &
     Q_UNUSED(requestedSize);
 
     if (images.contains(id))
-        return *(images[ id ].first);
+        return images[ id ].first;
     return QImage();
 }
 
-const ImageConstPtr &ImageProvider::get_image(const QString &id) {
+const QImage &ImageProvider::get_image(const QString &id) {
+    static const QImage null_img;
     if (images.contains(id))
         return images[ id ].first;
-    return NULL;
+    return null_img;
 }

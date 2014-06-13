@@ -6,6 +6,7 @@ LEARNING_MODE=
 
 DEFINES += \
     VER=\"$${VERSTR}\" \
+    DEFAULT_RECO_FACTOR=1.2 \
     CLEAN_DB \
     DEBUG
 
@@ -24,7 +25,7 @@ android {
 }
 
 linux {
-    QMAKE_CXXFLAGS += -std=c++0x
+    QMAKE_CXXFLAGS += -std=c++11
 
     DEFINES += WORK_DIR='\\"$${PWD}/database\\"'
 }

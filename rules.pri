@@ -1,5 +1,3 @@
-#!/bin/bash
-
 !isEmpty( LEARNING_MODE ) {
     DEFINES += LEARNING_MODE \
         MAIN_QML_FILE='\\"main_with_learning.qml\\"'

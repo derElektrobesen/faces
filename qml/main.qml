@@ -19,6 +19,7 @@ Window {
         fillMode: Image.Tile
         anchors.fill: parent
         opacity: 0.3
+        asynchronous: false
     }
 
     PhotoPanel {

@@ -19,6 +19,7 @@ class ImageProcessor : public QObject
     Q_OBJECT
 public:
     ImageProcessor(QObject *parent = 0);
+    ~ImageProcessor();
 
 signals:
     void imageChanged(const QString &imageId);
@@ -30,10 +31,8 @@ public slots:
     void recognize();
 
 protected:
-    void recognize(const QString &imageId, const ImageConstPtr &img);
-    ImagePtr search_face(const QImage &img) const;
-    ImagePtr recognize_face(const QImage &img) const;
-    void set_image(const QString &imageId, const ImageConstPtr &img);
+    void recognize(const QString &imageId, const QImage &img);
+    void set_image(const QString &imageId, const QImage &img);
 
     void register_provider();
 

@@ -7,6 +7,18 @@
 class FaceRecognizer : public QObject
 {
     Q_OBJECT
+
+#ifdef DEBUG
+    struct image_state_t {
+        const uchar *bytes;
+        int depth;
+        int bpl; /* Bytes per line */
+
+        image_state_t(const uchar *bytes, int depth, int bpl) :
+            bytes(bytes), depth(depth), bpl(bpl) {}
+    };
+#endif
+
 public:
     explicit FaceRecognizer(QObject *parent = 0);
 
@@ -18,7 +30,7 @@ protected:
     void prepare_image(const QImage *img);
 
 #ifdef DEBUG
-    void print_matrixes();
+    void print_matrixes(const image_state_t *gray_st, const image_state_t *default_st);
 #endif
 
 private:

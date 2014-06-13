@@ -7,12 +7,21 @@ FaceRecognizer::FaceRecognizer(QObject *parent) :
 }
 
 void FaceRecognizer::recognize(const QImage &in_img, QImage &out_img) {
+    if (in_img.isNull()) {
+        qDebug() << "Null image given";
+        return;
+    }
+
     out = &out_img;
     prepare_image(&in_img);
+
+    recognize_face(DEFAULT_RECO_FACTOR);
 }
 
 void FaceRecognizer::recognize_face(double factor) {
-    Q_UNUSED(factor);
+    int n_stages;
+    const HaarCascade::stage *stages = data.get_stages(&n_stages);
+
 }
 
 void FaceRecognizer::convert_to_grayscale(QImage *img) {
@@ -25,6 +34,7 @@ void FaceRecognizer::convert_to_grayscale(QImage *img) {
             gray = qGray(img->pixel(i, j));
             img->setPixel(i, j, qRgb(gray, gray, gray));
         }
+    *img = img->convertToFormat(QImage::Format_Indexed8, Qt::MonoOnly);
 }
 
 void FaceRecognizer::prepare_image(const QImage *img) {
@@ -69,25 +79,36 @@ void FaceRecognizer::prepare_image(const QImage *img) {
                         + matrix_of_squares[w * (y - 1) + x - 1];
         }
 #ifdef DEBUG
-    print_matrixes();
+    image_state_t gray(gray_bits, gray_depth, gray_bpl);
+    image_state_t def(img->bits(), img->depth() / 8, img->bytesPerLine());
+    print_matrixes(&gray, &def);
 #endif
 }
 
 #ifdef DEBUG
-#define MATR_MAX_OUT 4
-void FaceRecognizer::print_matrixes() {
-    int w = gray_img.width();
-    for (int x = 0; x < MATR_MAX_OUT; x++) {
-        QDebug d = qDebug();
-        for (int y = 0; y < MATR_MAX_OUT; y++)
-            d << integral_matrix[w * y + x];
-    }
-    qDebug() << "\n";
 
-    for (int x = 0; x < MATR_MAX_OUT; x++) {
-        QDebug d = qDebug();
-        for (int y = 0; y < MATR_MAX_OUT; y++)
-            d << matrix_of_squares[w * y + x];
-    }
+#define MATR_MAX_OUT 4
+#define PRINT(name, var, bpl, depth) ({ \
+    qDebug() << "\n" name << "BPL = " + QString::number(bpl) + "; DEPTH = " + QString::number(depth); \
+    char buf[10]; \
+    for (int x = 0; x < MATR_MAX_OUT; x++) { \
+        QDebug d = qDebug(); \
+        for (int y = 0; y < MATR_MAX_OUT; y++) { \
+            snprintf(buf, sizeof(buf), "%02X ", var[bpl * y + depth * x]); \
+            d << buf; \
+        } \
+    } \
+})
+
+void FaceRecognizer::print_matrixes(const image_state_t *gray_st, const image_state_t *default_st) {
+    int w = gray_img.width();
+    PRINT("Default image", default_st->bytes, default_st->bpl, default_st->depth);
+    PRINT("Gray image", gray_st->bytes, gray_st->bpl, gray_st->depth);
+    PRINT("Integral matrix", integral_matrix, w, 1);
+    PRINT("Matrix of squares", matrix_of_squares, w, 1);
 }
+
+#undef PRINT
+#undef MATR_MAX_OUT
+
 #endif

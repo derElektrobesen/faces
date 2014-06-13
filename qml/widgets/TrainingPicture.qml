@@ -60,7 +60,7 @@ Item {
 
     Image {
         id: photoPreview
-        asynchronous: true
+        asynchronous: false
 
         anchors.fill: parent
 

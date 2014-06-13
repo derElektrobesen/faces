@@ -15,21 +15,8 @@ class HaarCascade : public QObject
 {
     Q_OBJECT
 
-    struct stage {
-        double threshold;
-        stage *parent;
-    };
-
-    struct node {
-        int feature;
-        stage *node_stage;
-        double threshold;
-        double left_val;
-        double right_val;
-    };
-
+public:
     struct rect {
-        int feature;
         int x;
         int y;
         int width;
@@ -37,11 +24,32 @@ class HaarCascade : public QObject
         float weight;
     };
 
+    struct node {
+        int tilted;
+        double threshold;
+        double left_val;
+        double right_val;
+
+        int rects_count;
+        rect *rects_ptr;
+    };
+
+    struct stage {
+        double threshold;
+        stage *parent;
+
+        int nodes_count;
+        node *nodes_ptr;
+    };
+
 public:
     explicit HaarCascade(QObject *parent = 0);
     ~HaarCascade();
 
     bool load();
+
+    inline const stage *get_stages(int *count) const { *count = n_stages; return this->stages; }
+    inline stage *get_stages(int *count) { *count = n_stages; return this->stages; }
 
 signals:
 
@@ -58,6 +66,8 @@ private:
     stage *stages;
     node *nodes;
     rect *rects;
+
+    int n_stages;
 };
 
 #endif // HAARCASCADE_H
