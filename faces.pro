@@ -7,6 +7,7 @@ LEARNING_MODE=
 DEFINES += \
     VER=\"$${VERSTR}\" \
     DEFAULT_RECO_FACTOR=1.2 \
+    MAX_RECO_WND=120 \
     CLEAN_DB \
     DEBUG
 

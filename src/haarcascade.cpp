@@ -25,20 +25,25 @@ bool HaarCascade::init_memory() {
             return false; \
         q.next(); \
         count = q.value(0).toInt(); \
+        q.finish(); \
         if (!count) return false;
 
     READ_COUNT("features")
     features = new int [count];
+    bzero(features, sizeof(*features) * count);
 
     READ_COUNT("stages")
     stages = new stage [count];
     n_stages = count;
+    bzero(stages, sizeof(*stages) * count);
 
     READ_COUNT("nodes")
     nodes = new node [count];
+    bzero(nodes, sizeof(*nodes) * count);
 
     READ_COUNT("rects")
     rects = new rect [count];
+    bzero(rects, sizeof(*rects) * count);
 
 #undef READ_COUNT
 
@@ -68,6 +73,7 @@ bool HaarCascade::load_data() {
     q.next();   /* TODO: Convert to multiple sizes usage */
     window_min_w = q.value(0).toInt();
     window_min_h = q.value(1).toInt();
+    index = 1;
     q.finish();
 
     EXEC("select id, threshold, parent_stage from stages order by id")

@@ -34,8 +34,8 @@ bool ImageProcessor::can_capture() {
 
 void ImageProcessor::set_random_image() {
     DECLARE_SQL_CON(q);
-    //q.exec("select id, name from test_images order by random() limit 1");
-    q.exec("select id, name from test_images where id = 7");
+    q.exec("select id, name from test_images order by random() limit 1");
+    //q.exec("select id, name from test_images where id = 1");
     q.next();
 
     register_provider();
@@ -65,7 +65,7 @@ void ImageProcessor::register_provider() {
 }
 
 void ImageProcessor::recognize(const QString &imageId, const QImage &img) {
-    QImage result;
+    QImage result(img);
     recognizer.recognize(img, result);
     set_image(imageId + "_recognized", result);
 }

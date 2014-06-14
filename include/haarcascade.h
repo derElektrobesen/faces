@@ -49,7 +49,7 @@ public:
     bool load();
 
     inline const stage *get_stages(int *count) const { *count = n_stages; return this->stages; }
-    inline stage *get_stages(int *count) { *count = n_stages; return this->stages; }
+    inline void get_window(int *min_w, int *min_h) const { *min_w = window_min_w, *min_h = window_min_h; }
 
 signals:
 
