@@ -42,6 +42,11 @@ private:
 
     FaceRecognizer recognizer;
 
+#ifndef PROCESS_RANDOM_IMAGE
+    QVector< QString > images_paths;
+    int last_image;
+#endif
+
 };
 
 #endif // IMAGEPROCESSOR_H

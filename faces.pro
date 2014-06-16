@@ -8,8 +8,15 @@ DEFINES += \
     VER=\"$${VERSTR}\" \
     DEFAULT_RECO_FACTOR=1.2 \
     MAX_RECO_WND=120 \
+    DEFAULT_FACE_RECT_SIZE=64 \
+    STORE_INTERMIDATE_IMAGES \
+    USE_HIGH_LEVEL_CONVERSION \
     CLEAN_DB \
     DEBUG
+
+contains(DEFINES, STORE_INTERMIDATE_IMAGES) {
+    DEFINES += INTERMIDATE_IMAGES_PATH='\\"/tmp/faces_results/\\"'
+}
 
 include(rules.pri)
 
@@ -44,20 +51,23 @@ MOBILITY += multimedia
 # Default rules for deployment.
 include(deployment.pri)
 
-INCLUDEPATH += include
+INCLUDEPATH += include include/fann
 
 HEADERS += \
     include/databaseengine.h \
     include/main.h \
     include/imageprovider.h \
     include/facerecognizer.h \
-    include/haarcascade.h
+    include/haarcascade.h \
+    include/fann/fann.h \
+    include/fann/floatfann.h
 
 SOURCES += src/main.cpp \
     src/databaseengine.cpp \
     src/imageprovider.cpp \
     src/facerecognizer.cpp \
-    src/haarcascade.cpp
+    src/haarcascade.cpp \
+    src/fann/floatfann.c
 
 OTHER_FILES += \
     rules.pri
