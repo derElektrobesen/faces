@@ -8,26 +8,281 @@
 #endif
 
 enum fann_props_ids {
-    FANN_ACT_FUNCS_ID = 1,
-    FANN_ACT_STEEP_ID,
-    FANN_LAYERS_ID,
-    FANN_SCALE_MEAN_IN,
-    FANN_SCALE_DEVIATION_IN,
-    FANN_SCALE_NEW_MIN_IN,
-    FANN_SCALE_FACTOR_IN,
-    FANN_SCALE_MEAN_OUT,
-    FANN_SCALE_DEVIATION_OUT,
-    FANN_SCALE_NEW_MIN_OUT,
-    FANN_SCALE_FACTOR_OUT
+    FANN_PROP_num_layers = 1,
+    FANN_PROP_learning_rate,
+    FANN_PROP_connection_rate,
+    FANN_PROP_network_type,
+    FANN_PROP_learning_momentum,
+    FANN_PROP_training_algorithm,
+    FANN_PROP_train_error_function,
+    FANN_PROP_train_stop_function,
+    FANN_PROP_cascade_output_change_fraction,
+    FANN_PROP_quickprop_decay,
+    FANN_PROP_quickprop_mu,
+    FANN_PROP_rprop_increase_factor,
+    FANN_PROP_rprop_decrease_factor,
+    FANN_PROP_rprop_delta_min,
+    FANN_PROP_rprop_delta_max,
+    FANN_PROP_rprop_delta_zero,
+    FANN_PROP_cascade_output_stagnation_epochs,
+    FANN_PROP_cascade_candidate_change_fraction,
+    FANN_PROP_cascade_candidate_stagnation_epochs,
+    FANN_PROP_cascade_max_out_epochs,
+    FANN_PROP_cascade_min_out_epochs,
+    FANN_PROP_cascade_max_cand_epochs,
+    FANN_PROP_cascade_min_cand_epochs,
+    FANN_PROP_cascade_num_candidate_groups,
+    FANN_PROP_bit_fail_limit,
+    FANN_PROP_cascade_candidate_limit,
+    FANN_PROP_cascade_weight_multiplier,
+    FANN_PROP_scale_included,
+    FANN_PROP_cascade_activation_functions_count,
+    FANN_PROP_cascade_activation_functions,
+    FANN_PROP_cascade_activation_steepnesses_count,
+    FANN_PROP_cascade_activation_steepnesses,
+    FANN_PROP_layers_sizes,
+
+    FANN_PROP_scales,
+    FANN_PROP_scale_mean_in,
+    FANN_PROP_scale_deviation_in,
+    FANN_PROP_scale_new_min_in,
+    FANN_PROP_scale_factor_in,
+    FANN_PROP_scale_mean_out,
+    FANN_PROP_scale_deviation_out,
+    FANN_PROP_scale_new_min_out,
+    FANN_PROP_scale_factor_out
 };
 
-void FaceRecognizer::load_fann_db() {
+fann *FaceRecognizer::load_fann_db(int name_id) {
+    DECLARE_SQL_CON(q);
+    const QString name_str = QString::number(name_id);
+    fann *ann = NULL;
+    bool scale_included = false;
 
+    q.exec("select value from fann_params where net_id = " + name_str +
+           " and prop_id = " + QString::number(FANN_PROP_num_layers));
+    q.next();
+    ann = fann_allocate_structure(q.value(1).toString().toInt());
+    if (!ann)
+        return NULL;
+    q.finish();
+
+    q.exec("select value from fann_e_params where net_id = " + name_str +
+           " and prop_id = " + QString::number(FANN_PROP_layers_sizes) +
+           " order by id");
+
+    for(auto layer_it = ann->first_layer; layer_it != ann->last_layer; layer_it++)
+    {
+        q.next();
+        uint layer_size = q.value(0).toString().toUInt();
+        /* we do not allocate room here, but we make sure that
+         * last_neuron - first_neuron is the number of neurons */
+        layer_it->first_neuron = NULL;
+        layer_it->last_neuron = layer_it->first_neuron + layer_size;
+        ann->total_neurons += layer_size;
+    }
+    q.finish();
+    ann->num_input = ann->first_layer->last_neuron - ann->first_layer->first_neuron - 1;
+    ann->num_output = ((ann->last_layer - 1)->last_neuron - (ann->last_layer - 1)->first_neuron);
+
+    q.exec("select prop_id, value from fann_params where net_id = " + name_str +
+           " and prop_id < " + QString::number(FANN_PROP_scales) + " order by prop_id");
+
+#define QQ(__var__, __f__, __conv__) \
+    case FANN_PROP_##__var__: ann->__var__ = (__conv__)(q.value(1).toString().__f__()); break;
+#define QF(__var__) QQ(__var__, toFloat, float)
+#define QU(__var__) QQ(__var__, toUInt, uint)
+#define QE(__var__, __enum__) QQ(__var__, toUInt, __enum__)
+
+    while (q.next()) {
+        switch (q.value(0).toInt()) {
+            case FANN_PROP_num_layers:
+                break;
+            QF(learning_rate)
+            QF(connection_rate)
+            QF(learning_momentum)
+            QF(cascade_output_change_fraction)
+            QF(quickprop_decay)
+            QF(quickprop_mu)
+            QF(rprop_increase_factor)
+            QF(rprop_decrease_factor)
+            QF(rprop_delta_min)
+            QF(rprop_delta_max)
+            QF(rprop_delta_zero)
+            QF(cascade_candidate_change_fraction)
+            QF(bit_fail_limit)
+            QF(cascade_candidate_limit)
+            QF(cascade_weight_multiplier)
+            QU(cascade_output_stagnation_epochs)
+            QU(cascade_candidate_stagnation_epochs)
+            QU(cascade_max_out_epochs)
+            QU(cascade_min_out_epochs)
+            QU(cascade_max_cand_epochs)
+            QU(cascade_min_cand_epochs)
+            QU(cascade_num_candidate_groups)
+            QU(cascade_activation_functions_count)
+            QU(cascade_activation_steepnesses_count)
+            QE(network_type, fann_nettype_enum)
+            QE(training_algorithm, fann_train_enum)
+            QE(train_error_function, fann_errorfunc_enum)
+            QE(train_stop_function, fann_stopfunc_enum)
+            case FANN_PROP_scale_included:
+                scale_included = q.value(1).toString().toInt();
+                break;
+            default:
+                qDebug() << "Incorrect option:" << q.value(0).toInt();
+                break;
+        }
+    }
+
+    q.finish();
+    q.prepare("select prop_id, value from fann_e_params where net_id = ? and prop_id in (?, ?) order by id");
+    q.bindValue(0, name_id);
+    q.bindValue(1, FANN_PROP_cascade_activation_functions);
+    q.bindValue(2, FANN_PROP_cascade_activation_steepnesses);
+    q.exec();
+
+    /* TODO: Check returned values */
+    ann->cascade_activation_functions =
+        (enum fann_activationfunc_enum *)realloc(ann->cascade_activation_functions,
+        ann->cascade_activation_functions_count * sizeof(enum fann_activationfunc_enum));
+    ann->cascade_activation_steepnesses =
+        (fann_type *)realloc(ann->cascade_activation_steepnesses,
+        ann->cascade_activation_steepnesses_count * sizeof(fann_type));
+
+    int i = 0, j = 0;
+    while (q.next()) {
+        switch (q.value(0).toInt()) {
+            case FANN_PROP_cascade_activation_functions:
+                ann->cascade_activation_functions[i++] = (fann_activationfunc_enum)q.value(1).toString().toUInt();
+                break;
+            case FANN_PROP_cascade_activation_steepnesses:
+                ann->cascade_activation_steepnesses[j++] = q.value(1).toString().toFloat();
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (ann->network_type == FANN_NETTYPE_LAYER)
+        ann->num_output--;
+
+#define SCALE_LOAD( what, where ) case FANN_PROP_##what##_##where: {            \
+        float val = q.value(1).toString().toFloat();                            \
+        int *index = indexes + q.value(0).toInt() - FANN_PROP_scales - 1;       \
+        ann->what##_##where[*index++] = val;                                    \
+        break;                                                                  \
 }
 
-void FaceRecognizer::store_fann_db() {
-    fann *ann = neuro_network;
-    QString query = "insert or replace into fann_params(name, value) values ";
+    int indexes[8];
+    bzero(&indexes, sizeof(indexes));
+    if (scale_included) {
+        q.prepare("select prop_id, value from fann_e_params where net_id = ? and prop_id > ? order by id");
+        q.bindValue(0, name_id);
+        q.bindValue(1, FANN_PROP_scales);
+        q.exec();
+        while (q.next()) {
+            switch (q.value(0).toInt()) {
+                SCALE_LOAD( scale_mean, in );
+                SCALE_LOAD( scale_deviation, in );
+                SCALE_LOAD( scale_new_min, in );
+                SCALE_LOAD( scale_factor, in );
+
+                SCALE_LOAD( scale_mean,	out );
+                SCALE_LOAD( scale_deviation, out );
+                SCALE_LOAD( scale_new_min, out );
+                SCALE_LOAD( scale_factor, out );
+
+                default:
+                    break;
+            }
+        }
+    }
+
+#undef SCALE_LOAD
+#undef QQ
+#undef QU
+#undef QF
+#undef QE
+
+    fann_allocate_neurons(ann);
+    if (ann->errno_f == FANN_E_CANT_ALLOCATE_MEM) {
+        fann_destroy(ann);
+        return NULL;
+    }
+
+    q.exec("select num_inputs, activation_function, activation_steepness from neurons where net_id = " +
+           name_str + " order by id");
+
+    auto last_neuron = (ann->last_layer - 1)->last_neuron;
+    for (auto neuron_it = ann->first_layer->first_neuron; neuron_it != last_neuron; neuron_it++) {
+        if (q.next()) {
+            neuron_it->activation_function = (enum fann_activationfunc_enum)q.value(1).toInt();
+            neuron_it->first_con = ann->total_connections;
+            ann->total_connections += q.value(0).toInt();
+            neuron_it->last_con = ann->total_connections;
+            neuron_it->activation_steepness = q.value(3).toFloat();
+        } else {
+            qDebug() << "Incorrect number of neurons";
+            fann_destroy(ann);
+            return NULL;
+        }
+    }
+    q.finish();
+
+    fann_allocate_connections(ann);
+    if(ann->errno_f == FANN_E_CANT_ALLOCATE_MEM) {
+        fann_destroy(ann);
+        return NULL;
+    }
+
+    auto connected_neurons = ann->connections;
+    auto weights = ann->weights;
+    auto first_neuron = ann->first_layer->first_neuron;
+
+    q.exec("select connected_to_neuron, weight from connections where net_id = " + name_str + " order by id");
+
+    for (uint i = 0; i < ann->total_connections; i++) {
+        if (!q.next()) {
+            qDebug() << "Incorrect number of connections";
+            fann_destroy(ann);
+            return NULL;
+        }
+        weights[i] = q.value(1).toFloat();
+        connected_neurons[i] = first_neuron + q.value(0).toInt();
+    }
+    q.finish();
+
+    return ann;
+}
+
+fann *FaceRecognizer::create_new_neuronet(const QString &name) {
+    fann *net = fann_create_standard(3,
+                    DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE,
+                    DEFAULT_FACE_RECT_SIZE,
+                    2);
+    if (!net) {
+        qDebug() << "fann_create_standard failure";
+        return NULL;
+    }
+    fann_set_activation_function_hidden(net, FANN_SIGMOID_SYMMETRIC);
+    fann_set_activation_function_output(net, FANN_SIGMOID_SYMMETRIC);
+
+    DECLARE_SQL_CON(q);
+    q.prepare("insert into neuro_networks(name) values (?)");
+    q.bindValue(0, name);
+    q.exec();
+
+    nets[name] = qMakePair(false, net);
+    people[name] = q.lastInsertId().toInt();
+
+    q.finish();
+
+    return net;
+}
+
+void FaceRecognizer::store_fann_db(const fann *ann, int name_id) {
+    QString query = "replace into fann_params(net_id, prop_id, value) values ";
 
     struct fann_layer *layer_it;
     struct fann_neuron *neuron_it, *first_neuron;
@@ -36,127 +291,134 @@ void FaceRecognizer::store_fann_db() {
     unsigned int i = 0;
 
     DECLARE_SQL_CON(q);
+    q.exec("begin transaction");
+    QString name_id_s = QString::number(name_id);
 
-#define Q_NO_COMMA_VAR(__var__, __name__, __val__) \
-    ({ __var__ += QString() + "(" + __name__ + ", '" + QString::number(__val__) + "')"; })
-
-#define Q_S_VAR(__var__, __name__, __val__) \
-    ({ __var__ += QString() + ", ('" + __name__ + "', '" + __val__ + "')"; })
-
-#define Q_VAR(__var__, __name__, __val__)   Q_S_VAR(__var__, __name__, QString::number(__val__))
-#define Q_S(__name__, __val__)              Q_S_VAR(query, __name__, __val__)
-#define Q(__name__, __val__)                Q_S(__name__, QString::number(__val__))
+#define Q(__var__) \
+    ({ QString() + "(" + name_id_s + ", " + QString::number(FANN_PROP_##__var__) + \
+            ", '" + QString::number(ann->__var__) + "')"; })
+#define QV(__var__, __val__) \
+    ({ QString() + "(" + name_id_s + ", " + QString::number(FANN_PROP_##__var__) + \
+            ", '" + QString::number(__val__) + "')"; })
+#define QQ(__var__) ({ query += ", " + Q(__var__); })
 
     /* Save network parameters */
-    Q_NO_COMMA_VAR(query, "'num_layers'", (int)(ann->last_layer - ann->first_layer));
-    Q("learning_rate", ann->learning_rate);
-    Q("connection_rate", ann->connection_rate);
-    Q("network_type", ann->network_type);
+    query += QV(num_layers, (int)(ann->last_layer - ann->first_layer));
+    QQ(learning_rate);
+    QQ(connection_rate);
+    QQ(network_type);
+    QQ(learning_momentum);
+    QQ(training_algorithm);
+    QQ(train_error_function);
+    QQ(train_stop_function);
+    QQ(cascade_output_change_fraction);
+    QQ(quickprop_decay);
+    QQ(quickprop_mu);
+    QQ(rprop_increase_factor);
+    QQ(rprop_decrease_factor);
+    QQ(rprop_delta_min);
+    QQ(rprop_delta_max);
+    QQ(rprop_delta_zero);
+    QQ(cascade_output_stagnation_epochs);
+    QQ(cascade_candidate_change_fraction);
+    QQ(cascade_candidate_stagnation_epochs);
+    QQ(cascade_max_out_epochs);
+    QQ(cascade_min_out_epochs);
+    QQ(cascade_max_cand_epochs);
+    QQ(cascade_min_cand_epochs);
+    QQ(cascade_num_candidate_groups);
+    QQ(bit_fail_limit);
+    QQ(cascade_candidate_limit);
+    QQ(cascade_weight_multiplier);
+    QQ(cascade_activation_functions_count);
+    QQ(cascade_activation_steepnesses_count);
 
-    Q("learning_momentum", ann->learning_momentum);
-    Q("training_algorithm", ann->training_algorithm);
-    Q("train_error_function", ann->train_error_function);
-    Q("train_stop_function", ann->train_stop_function);
-    Q("cascade_output_change_fraction", ann->cascade_output_change_fraction);
-    Q("quickprop_decay", ann->quickprop_decay);
-    Q("quickprop_mu", ann->quickprop_mu);
-    Q("rprop_increase_factor", ann->rprop_increase_factor);
-    Q("rprop_decrease_factor", ann->rprop_decrease_factor);
-    Q("rprop_delta_min", ann->rprop_delta_min);
-    Q("rprop_delta_max", ann->rprop_delta_max);
-    Q("rprop_delta_zero", ann->rprop_delta_zero);
-    Q("cascade_output_stagnation_epochs", ann->cascade_output_stagnation_epochs);
-    Q("cascade_candidate_change_fraction", ann->cascade_candidate_change_fraction);
-    Q("cascade_candidate_stagnation_epochs", ann->cascade_candidate_stagnation_epochs);
-    Q("cascade_max_out_epochs", ann->cascade_max_out_epochs);
-    Q("cascade_min_out_epochs", ann->cascade_min_out_epochs);
-    Q("cascade_max_cand_epochs", ann->cascade_max_cand_epochs);
-    Q("cascade_min_cand_epochs", ann->cascade_min_cand_epochs);
-    Q("cascade_num_candidate_groups", ann->cascade_num_candidate_groups);
+    query += ", " + QV(scale_included, ann->scale_mean_in ? 0 : 1);
+    q.exec(query);
 
-    Q("bit_fail_limit", ann->bit_fail_limit);
-    Q("cascade_candidate_limit", ann->cascade_candidate_limit);
-    Q("cascade_weight_multiplier", ann->cascade_weight_multiplier);
+#define QUERY_OVERFLOW(__i__, __q__, __new_q__) ({ \
+        if (__i__ >= SQL_MAX_INSERT) { \
+            q.exec(query); \
+            __i__ = 0; \
+            __q__ = __new_q__; \
+        } \
+})
 
-    Q("cascade_activation_functions_count", ann->cascade_activation_functions_count);
-
-    q.exec("delete from fann_e_params");
-    QString tmp = "insert into fann_e_params(param_type, value) values ";
+    QString req_head = "replace into fann_e_params(net_id, prop_id, value) values ";
+    query = req_head;
     for(i = 0; i < ann->cascade_activation_functions_count; i++) {
         if (i)
-            tmp += ", ";
-        Q_NO_COMMA_VAR(tmp, FANN_ACT_FUNCS_ID, ann->cascade_activation_functions[i]);
+            query += ", ";
+        query += QV(cascade_activation_functions, ann->cascade_activation_functions[i]);
+        QUERY_OVERFLOW(i, query, req_head);
     }
     if (i)
-        q.exec(tmp);
+        q.exec(query);
 
-    Q("cascade_activation_steepnesses_count", ann->cascade_activation_steepnesses_count);
-    tmp = "insert into fann_e_params(param_type, value) values ";
+    query = req_head;
     for(i = 0; i < ann->cascade_activation_steepnesses_count; i++) {
         if (i)
-            tmp += ", ";
-        Q_NO_COMMA_VAR(tmp, FANN_ACT_STEEP_ID, ann->cascade_activation_steepnesses[i]);
+            query += ", ";
+        query += QV(cascade_activation_steepnesses, ann->cascade_activation_steepnesses[i]);
+        QUERY_OVERFLOW(i, query, req_head);
     }
     if (i)
-        q.exec(tmp);
+        q.exec(query);
 
-    tmp = "insert into fann_e_params(param_type, value) values ";
     i = 0;
+    query = req_head;
     for(layer_it = ann->first_layer; layer_it != ann->last_layer; layer_it++) {
         if (i++)
-            tmp += ", ";
+            query += ", ";
         /* the number of neurons in the layers (in the last layer, there is always one too many neurons, because of an unused bias) */
-        Q_NO_COMMA_VAR(tmp, FANN_LAYERS_ID, (int)(layer_it->last_neuron - layer_it->first_neuron));
+        query += QV(layers_sizes, (int)(layer_it->last_neuron - layer_it->first_neuron));
+        QUERY_OVERFLOW(i, query, req_head);
     }
     if (i)
-        q.exec(tmp);
+        q.exec(query);
 
-#define SCALE_SAVE( what, where, type) ({                                       \
-        QString tmp = "insert into fann_e_params(param_type, value) values ";   \
+#define SCALE_SAVE( what, where ) ({                                            \
+        QString tmp = req_head;                                                 \
         uint i;                                                                 \
         for (i = 0; i < ann->num_##where##put; i++) {                           \
             if (i)                                                              \
                 tmp += ", ";                                                    \
-            Q_NO_COMMA_VAR(tmp, type, ann->what##_##where[i]);                  \
+            tmp += QV(what##_##where, ann->what##_##where[i]);                  \
+            QUERY_OVERFLOW(i, tmp, req_head);                                   \
         }                                                                       \
         if (i)                                                                  \
             q.exec(tmp);                                                        \
 })
 
     if(ann->scale_mean_in != NULL) {
-        Q_S("scale_included", "1");
-        SCALE_SAVE( scale_mean, in, FANN_SCALE_MEAN_IN );
-        SCALE_SAVE( scale_deviation, in, FANN_SCALE_DEVIATION_IN );
-        SCALE_SAVE( scale_new_min, in, FANN_SCALE_NEW_MIN_IN );
-        SCALE_SAVE( scale_factor, in, FANN_SCALE_FACTOR_IN );
+        SCALE_SAVE( scale_mean, in );
+        SCALE_SAVE( scale_deviation, in );
+        SCALE_SAVE( scale_new_min, in );
+        SCALE_SAVE( scale_factor, in );
 
-        SCALE_SAVE( scale_mean,	out, FANN_SCALE_MEAN_OUT );
-        SCALE_SAVE( scale_deviation, out, FANN_SCALE_DEVIATION_OUT );
-        SCALE_SAVE( scale_new_min, out, FANN_SCALE_NEW_MIN_OUT );
-        SCALE_SAVE( scale_factor, out, FANN_SCALE_FACTOR_OUT );
-    } else
-        Q_S("scale_included", "0");
-    q.exec("delete from fann_params");
-    q.exec(query);
+        SCALE_SAVE( scale_mean,	out );
+        SCALE_SAVE( scale_deviation, out );
+        SCALE_SAVE( scale_new_min, out );
+        SCALE_SAVE( scale_factor, out );
+    }
 
 #undef SCALE_SAVE
-#undef Q_NO_COMMA_VAR
-#undef Q_S_VAR
-#undef Q_VAR
-#undef Q_S
 #undef Q
+#undef QQ
+#undef QV
 
-    q.exec("delete from neurons");
+    q.exec("delete from neurons where net_id = " + name_id_s);
 
     i = 0;
-    query = "insert into neurons(num_inputs, activation_function, asctivation_steepness) values ";
+    req_head = query = "insert into neurons(net_id, num_inputs, activation_function, activation_steepness) values ";
     for(layer_it = ann->first_layer; layer_it != ann->last_layer; layer_it++)
         for(neuron_it = layer_it->first_neuron; neuron_it != layer_it->last_neuron; neuron_it++) {
             if (i++)
                 query += ", ";
-            query += "(" + QString::number(neuron_it->last_con - neuron_it->first_con) + ", " +
+            query += "(" + name_id_s + ", " + QString::number(neuron_it->last_con - neuron_it->first_con) + ", " +
                     QString::number(neuron_it->activation_function) + ", " +
                     QString::number(neuron_it->activation_steepness) + ")";
+            QUERY_OVERFLOW(i, query, req_head);
         }
     if (i)
         q.exec(query);
@@ -175,31 +437,61 @@ void FaceRecognizer::store_fann_db() {
      * representation as an i386 machine.
      */
 
-    q.exec("delete from connections");
-
     i = 0;
-    query = "insert into connections(connected_to_neuron, weight) values ";
+    q.exec("delete from connections where net_id = " + name_id_s);
+    req_head = query = "insert into connections(net_id, connected_to_neuron, weight) values ";
+    qDebug() << ann->total_connections;
     for(i = 0; i < ann->total_connections; i++) {
         if (i++)
             query += ", ";
-        query += "(" + QString::number((int)(connected_neurons[i] - first_neuron)) + ", " + QString::number(weights[i]) + ")";
+        query += "(" + name_id_s + ", " +
+                QString::number((int)(connected_neurons[i] - first_neuron)) + ", " + QString::number(weights[i]) + ")";
+        QUERY_OVERFLOW(i, query, req_head);
     }
     if (i)
         q.exec(query);
+    q.exec("commit");
 }
 
 FaceRecognizer::~FaceRecognizer() {
-    if (neural_network_changed && neuro_network)
-        store_fann_db();
+    for (auto it = nets.begin(); it != nets.end(); it++) {
+        if (it.value().first) {
+            /* Net changed */
+#ifdef STORE_NNET_IN_F
+            fann_save(it.value().second, (QString(WORK_DIR "/") + it.key() + ".net").toUtf8());
+#else
+            store_fann_db(it.value().second, people[it.key()]);
+#endif
+        }
+        fann_destroy(it.value().second);
+    }
+    qDebug() << "Neuro networks storred";
+}
+
+void FaceRecognizer::load_people() {
+    DECLARE_SQL_CON(q);
+    q.exec("select id, name from neuro_networks");
+
+    while (q.next()) {
+#ifdef STORE_NNET_IN_F
+        fann *ann = fann_create_from_file((QString(WORK_DIR "/") + q.value(1).toString() + ".net").toUtf8());
+#else
+        fann *ann = load_fann_db(q.value(0).toInt());
+#endif
+        if (!ann) {
+            qDebug() << "FANN loading failure!";
+            return;
+        }
+        nets[q.value(1).toString()] = qMakePair(false, ann);
+        people[q.value(1).toString()] = q.value(0).toInt();
+    }
 }
 
 FaceRecognizer::FaceRecognizer(QObject *parent) :
-    QObject(parent),
-    neuro_network(NULL),
-    neural_network_changed(false)
+    QObject(parent)
 {
     data.load();
-    load_fann_db();
+    load_people();
 
 #ifdef STORE_INTERMIDATE_IMAGES
     QDir d(INTERMIDATE_IMAGES_PATH);
@@ -239,129 +531,41 @@ void FaceRecognizer::recognize(const QImage &in_img, QImage &out_img) {
     QImage face;
     choose_rect(faces, &face, &gray_image);
 
-    QVector< uchar > out_pixels;
-    add_dobeshi_conversion(pixels, out_pixels);
-
-    store_converted_image(out_pixels, "dobeshi_1");
-}
-
 #if 0
-inline void FaceRecognizer::dobeshi_conv_impl(const uchar *i_data, int len, uchar *o_data) {
-    /* in_data is a square matrix */
-#define SQRT_3  1.732050808
-#define SQRT_2  1.414213562
-    static float filter_matrix[] = {
-#ifdef USE_LOW_LEVEL_CONVERSION
-        (1.0f + SQRT_3) / (4.0f * SQRT_2),
-        (3.0f + SQRT_3) / (4.0f * SQRT_2),
-        (3.0f - SQRT_3) / (4.0f * SQRT_2),
-        (1.0f - SQRT_3) / (4.0f * SQRT_2)
-#elif defined USE_HIGH_LEVEL_CONVERSION
-        (1.0f - SQRT_3) / (4.0f * SQRT_2),
-       -(3.0f - SQRT_3) / (4.0f * SQRT_2),
-        (3.0f + SQRT_3) / (4.0f * SQRT_2),
-       -(1.0f + SQRT_3) / (4.0f * SQRT_2)
+    /* Debug filters saving */
+    QVector< uchar > out_pixels;
+    set_filter(&face, out_pixels, HOAR_FILTER);
+    store_converted_image(out_pixels, "dobeshi_1");
+    set_filter(&face, out_pixels, D4_FILTER);
+    store_converted_image(out_pixels, "dobeshi_2");
+    set_filter(&face, out_pixels, D6_FILTER);
+    store_converted_image(out_pixels, "dobeshi_3");
+    set_filter(&face, out_pixels, D10_FILTER);
+    store_converted_image(out_pixels, "dobeshi_4");
 #endif
-    };
-#undef SQRT_2
-#undef SQRT_3
 
-    for (int i = 0; i < len; i += 2, o_data++) {
-        float s = 0;
-        for (int j = 0; j < st_arr_len_s(filter_matrix); j++)
-            s += i_data[(i + j) % len] * filter_matrix[j];
-        *o_data = (uchar)qCeil(s);
-    }
+    set_filter(&face, last_recognized_face, D6_FILTER);
+    QString name = neuro_search(last_recognized_face);
+    qDebug() << name;
 }
 
-void FaceRecognizer::add_dobeshi_conversion(const QVector< uchar > &in_data, QVector< uchar > &out_data) {
-    int w = (int)(qSqrt(in_data.size())); /* 2^i x 2^i [px] image */
-    QVector< uchar > tmp(w), tmp1(in_data.size() / 2);
-    const uchar *row = &in_data[0];
-    uchar *col = &tmp[0];
-    uchar *tmp1_ptr = &tmp1[0];
-
-    out_data.resize(in_data.size() / 4);
-    uchar *out = &out_data[0];
-
-    int w2 = w / 2;
-    int w4 = w2 / 2;
-
-    for (int i = 0; i < w; i++)
-        dobeshi_conv_impl(row + w * i, w, tmp1_ptr + w2 * i);
-    for (int i = 0; i < w2; i++) {
-        for (int j = 0; j < w2; j++)
-            col[j] = tmp1_ptr[w2 * j + i];
-        dobeshi_conv_impl(col, w2, col + w2);
-        for (int j = 0; j < w4; j++)
-            out[w4 * j + i] = col[j + w2];
-    }
-}
-#else
-inline void FaceRecognizer::dobeshi_conv_impl(const uchar *i_data, int len, uchar *o_data) {
-    /* in_data is a square matrix */
-#define SQRT_3  1.732050808
-#define SQRT_2  1.414213562
-
-    static float l_filter_matrix[] = {
-        (1.0f + SQRT_3) / (4.0f * SQRT_2),
-        (3.0f + SQRT_3) / (4.0f * SQRT_2),
-        (3.0f - SQRT_3) / (4.0f * SQRT_2),
-        (1.0f - SQRT_3) / (4.0f * SQRT_2)
-    };
-    static float h_filter_matrix[] = {
-        (1.0f - SQRT_3) / (4.0f * SQRT_2),
-       -(3.0f - SQRT_3) / (4.0f * SQRT_2),
-        (3.0f + SQRT_3) / (4.0f * SQRT_2),
-       -(1.0f + SQRT_3) / (4.0f * SQRT_2)
-    };
-    Q_ASSERT(sizeof(l_filter_matrix) == sizeof(h_filter_matrix));
-
-#undef SQRT_2
-#undef SQRT_3
-
-    for (int i = 0; i < len; i += 2, o_data++) {
-        float sl = 0, sh = 0;
-        for (int j = 0; j < st_arr_len_s(l_filter_matrix); j++) {
-            sl += i_data[(i + j) % len] * l_filter_matrix[j];
-            sh += i_data[(i + j) % len] * h_filter_matrix[j];
-        }
-        *o_data = (uchar)qCeil(sl);
-        *++o_data = (uchar)qCeil(sh);
-    }
-}
-
-void FaceRecognizer::add_dobeshi_conversion(const QVector< uchar > &in_data, QVector< uchar > &out_data) {
-    int w = (int)(qSqrt(in_data.size())); /* 2^i x 2^i [px] image */
-    QVector< uchar > buf(in_data.size());
-    out_data.resize(in_data.size());
-
-    const uchar *in = &in_data[0];
-    uchar *tmp = &buf[0];
-    uchar *out = &out_data[0];
-
-    for (int i = 0; i < w; i++)
-        dobeshi_conv_impl(in + w * i, w, out + w * i);
-    for (int i = 0; i < w; i++) {
-        for (int j = 0; j < w; j++)
-            tmp[j] = out[w * j + i];
-        dobeshi_conv_impl(tmp, w, tmp + w);
-        for (int j = 0; j < w; j++)
-            out[w * j + i] = tmp[w + j];
+QString FaceRecognizer::neuro_search(const QVector< uchar > &data) {
+    static float f_data[DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE];
+    if (st_arr_len(f_data) != data.size()) {
+        qDebug() << "Something happens wrong: Incorrect input array length";
+        return "";
     }
 
-    int w2 = w / 2;
-    int w4 = w / 4;
-    for (int i = 0; i < w4; i++)
-        for (int j = 0; j < w4; j++) {
-            tmp[i * w2 + j] = out[2 * i * w + j * 2];
-            tmp[(i + 1) * w2 + j] = out[2 * (i + 1) * w + j * 2];
-            tmp[w2 * w + i * w2 + j] = out[2 * i * w + (j + 1) * 2];
-            tmp[w2 * w + (i + 1) * w2 + j] = out[2 * (i + 1) * w + (j + 1) * 2];
-        }
-    out_data = buf;
+    const uchar *i_data = data.data();
+    for (size_t i = 0; i < st_arr_len(f_data); i++)
+        f_data[i] = 1.0 * i_data[i];
+
+    for (auto it = nets.begin(); it != nets.end(); it++) {
+        float *out = fann_run(it.value().second, f_data);
+        qDebug() << it.key() << out[0] << out[1];
+    }
+    return "";
 }
-#endif
 
 /*
  * Only one face per image expected.
@@ -639,4 +843,32 @@ void FaceRecognizer::draw_rect(const QRect &rect, QImage *img, QColor color) {
     painter.setBrush(Qt::NoBrush);
 
     painter.drawRect(rect);
+}
+
+inline static bool update_neuronet(fann *ann, const uchar *data, size_t count) {
+    static float f_data[DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE];
+    if (st_arr_len(f_data) != count) {
+        qDebug() << "Something happens wrong: Incorrect input array length";
+        return false;
+    }
+
+    for (size_t i = 0; i < count; i++)
+        f_data[i] = 1.0 * data[i];
+
+    float results[] = { 1.0f, -1.0f };
+    fann_train(ann, f_data, results);
+    return true;
+}
+
+void FaceRecognizer::update_name(const QString &new_name) {
+    if (!last_recognized_face.size())
+        return;
+
+    fann *ann = NULL;
+    if (!people.contains(new_name))
+        ann = create_new_neuronet(new_name);
+    else
+        ann = nets[new_name].second;
+    if (update_neuronet(ann, last_recognized_face.data(), last_recognized_face.size()))
+        nets[new_name].first = true;
 }

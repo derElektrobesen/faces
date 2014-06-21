@@ -8,10 +8,10 @@ DEFINES += \
     VER=\"$${VERSTR}\" \
     DEFAULT_RECO_FACTOR=1.2 \
     MAX_RECO_WND=120 \
-    DEFAULT_FACE_RECT_SIZE=64 \
+    DEFAULT_FACE_RECT_SIZE=128 \
     STORE_INTERMIDATE_IMAGES \
     USE_HIGH_LEVEL_CONVERSION \
-    CLEAN_DB \
+    STORE_NNET_IN_F \
     DEBUG
 
 contains(DEFINES, STORE_INTERMIDATE_IMAGES) {
@@ -33,9 +33,15 @@ android {
 }
 
 linux {
-    QMAKE_CXXFLAGS += -std=c++11
+    QMAKE_CXXFLAGS += -std=c++11 -lmysqlclient_r
 
     DEFINES += WORK_DIR='\\"$${PWD}/database\\"'
+}
+
+contains(DEFINES, USE_MYSQL) {
+    DEFINES += SQL_MAX_INSERT=2500
+} else {
+    DEFINES += SQL_MAX_INSERT=250
 }
 
 QT += qml quick multimedia core quick widgets sql
@@ -67,7 +73,8 @@ SOURCES += src/main.cpp \
     src/imageprovider.cpp \
     src/facerecognizer.cpp \
     src/haarcascade.cpp \
-    src/fann/floatfann.c
+    src/fann/floatfann.c \
+    src/filters.cpp
 
 OTHER_FILES += \
     rules.pri

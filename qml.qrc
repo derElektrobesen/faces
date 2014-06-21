@@ -9,6 +9,8 @@
         <file alias="BtnGroup.qml">qml/widgets/BtnGroup.qml</file>
         <file alias="PhotoPanel.qml">qml/widgets/PhotoPanel.qml</file>
         <file alias="TrainingPicture.qml">qml/widgets/TrainingPicture.qml</file>
+        <file alias="InputBox.qml">qml/widgets/InputBox.qml</file>
+        <file alias="LineEdit.qml">qml/widgets/LineEdit.qml</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="stripes.png">qml/widgets/images/stripes.png</file>

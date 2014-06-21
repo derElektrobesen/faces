@@ -6,6 +6,7 @@ DataBaseEngine::DataBaseEngine(QObject *parent) :
 }
 
 bool DataBaseEngine::initialize_database() {
+#ifndef USE_MYSQL
     QFile db_file(":/assets/" DB_F_NAME);
     const char fname[] = WORK_DIR "/" DB_F_NAME;
 
@@ -21,5 +22,11 @@ bool DataBaseEngine::initialize_database() {
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", DB_NAME);
     db.setDatabaseName(fname);
+#else
+    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL", DB_NAME);
+    db.setUserName("user");
+    db.setPassword("");
+    db.setDatabaseName("face_recognizer");
+#endif
     return db.open();
 }

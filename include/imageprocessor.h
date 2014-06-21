@@ -29,6 +29,7 @@ public slots:
     bool can_capture();
     void set_random_image();
     void recognize();
+    void update_name(const QString &new_name);
 
 protected:
     void recognize(const QString &imageId, const QImage &img);

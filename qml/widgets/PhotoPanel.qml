@@ -9,14 +9,19 @@ Item {
     property int margin: 3
     property int padding: 3
     property int bottom_anchor: 40
+    property int top_anchor: 0
 
     anchors.horizontalCenter: parent.horizontalCenter
 
     x: margin
-    y: margin
+    y: margin + top_anchor
 
     width: parent.width - 2 * padding
-    height: parent.height - 2 * padding - bottom_anchor
+    height: parent.height - 2 * padding - bottom_anchor - top_anchor
+
+    function update_name(new_name) {
+        imageProcessor.update_name(new_name);
+    }
 
     function take_photo() {
         if (imageProcessor.can_capture())

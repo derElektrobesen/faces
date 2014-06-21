@@ -87,3 +87,7 @@ void ImageProcessor::recognize(const QString &imageId, const QImage &img) {
     recognizer.recognize(img, result);
     set_image(imageId + "_recognized", result);
 }
+
+void ImageProcessor::update_name(const QString &new_name) {
+    recognizer.update_name(new_name);
+}
