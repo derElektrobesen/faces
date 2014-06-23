@@ -13,6 +13,8 @@ Item {
 
     anchors.horizontalCenter: parent.horizontalCenter
 
+    signal imageChanged(string name);
+
     x: margin
     y: margin + top_anchor
 
@@ -96,6 +98,7 @@ Item {
         id: imageProcessor
         onImageChanged: {
             set_photo(imageId);
+            container.imageChanged(name);
         }
     }
 }

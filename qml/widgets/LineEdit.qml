@@ -39,7 +39,6 @@ Item {
         y: parent.y + margin
         width: parent.width
 
-        text: "Hello"
         maximumLength: 255
         font.pixelSize: text_size
 

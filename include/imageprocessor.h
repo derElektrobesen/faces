@@ -22,7 +22,7 @@ public:
     ~ImageProcessor();
 
 signals:
-    void imageChanged(const QString &imageId);
+    void imageChanged(const QString &imageId, const QString &name);
 
 public slots:
     void process_image(const QString &path);
@@ -33,7 +33,7 @@ public slots:
 
 protected:
     void recognize(const QString &imageId, const QImage &img);
-    void set_image(const QString &imageId, const QImage &img);
+    void set_image(const QString &imageId, const QImage &img, const QString &name = "");
 
     void register_provider();
 
@@ -46,6 +46,8 @@ private:
 #ifndef PROCESS_RANDOM_IMAGE
     QVector< QString > images_paths;
     int last_image;
+#else
+    QString last_name;
 #endif
 
 };

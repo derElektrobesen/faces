@@ -18,7 +18,7 @@ insert() {
 cd images/ExtendedYaleB
 cur_pwd=$(pwd)
 while read folder; do
-    row_id=$(echo "insert into neuro_networks(name) values ('$folder'); select last_insert_rowid();" | sqlite3 $db_path)
+    row_id=$(echo "insert into names(name) values ('$folder'); select last_insert_rowid();" | sqlite3 $db_path)
     t_names=$((t_names + 1))
 
     while read file; do
@@ -35,7 +35,7 @@ while read folder; do
             i=$((i + 1))
         fi
     done < <(find $folder -type f -name "*.pgm")
-done < <(find . -type d)
+done < <(find . -type d | tail -n +2 | sed 's/^\.\///')
 
 if [ "$i" -ne "0" ]; then
     insert "$line" $i

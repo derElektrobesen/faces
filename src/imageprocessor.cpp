@@ -6,7 +6,7 @@ ImageProcessor::ImageProcessor(QObject *parent) :
 {
 #ifndef PROCESS_RANDOM_IMAGE
     DECLARE_SQL_CON(q);
-    q.exec("select name from test_images order by id limit 20");
+    q.exec("select path from test_images order by id limit 20");
     while (q.next())
         images_paths.push_back(q.value(0).toString());
     last_image = -1;
@@ -45,14 +45,15 @@ void ImageProcessor::set_random_image() {
 
 #ifdef PROCESS_RANDOM_IMAGE
     DECLARE_SQL_CON(q);
-    q.exec("select id, name from test_images order by random() limit 1");
-    //q.exec("select id, name from test_images where id = 1");
+    q.exec("select t.id, t.path, n.name from test_images t join names n on n.id = t.name_id order by random() limit 1");
     q.next();
 
     QImage img(q.value(1).toString());
-    set_image((last_path = q.value(0).toString()), img);
+    last_name = q.value(2).toString();
+    set_image((last_path = q.value(0).toString()), img, last_name);
     qDebug() << "Image path:" << q.value(1).toString();
     q.finish();
+
 #else
     if (++last_image >= images_paths.size())
         last_image = 0;
@@ -70,9 +71,9 @@ void ImageProcessor::recognize() {
     recognize(last_path, img_provider.get_image(last_path));
 }
 
-void ImageProcessor::set_image(const QString &imageId, const QImage &img) {
+void ImageProcessor::set_image(const QString &imageId, const QImage &img, const QString &name) {
     img_provider.set_new_image(imageId, img);
-    emit imageChanged(imageId);
+    emit imageChanged(imageId, name);
 }
 
 void ImageProcessor::register_provider() {
@@ -85,7 +86,10 @@ void ImageProcessor::register_provider() {
 void ImageProcessor::recognize(const QString &imageId, const QImage &img) {
     QImage result(img);
     recognizer.recognize(img, result);
-    set_image(imageId + "_recognized", result);
+#ifndef PROCESS_RANDOM_IMAGE
+    QString last_name = "Unknown";
+#endif
+    set_image(imageId + "_recognized", result, last_name);
 }
 
 void ImageProcessor::update_name(const QString &new_name) {

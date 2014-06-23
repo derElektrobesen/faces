@@ -11,6 +11,7 @@
         <file alias="TrainingPicture.qml">qml/widgets/TrainingPicture.qml</file>
         <file alias="InputBox.qml">qml/widgets/InputBox.qml</file>
         <file alias="LineEdit.qml">qml/widgets/LineEdit.qml</file>
+        <file alias="ImageInfoPanel.qml">qml/widgets/ImageInfoPanel.qml</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="stripes.png">qml/widgets/images/stripes.png</file>

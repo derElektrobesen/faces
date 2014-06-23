@@ -5,10 +5,13 @@ import "widgets"
 import com.ics.faces 1.0
 
 Window {
+    id: container
+
     property int text_size: 23
     property int padding: 5
 
-    id: main_window
+    property bool first_run: true
+
     visible: true
     width: 300
     height: 500
@@ -26,27 +29,25 @@ Window {
     PhotoPanel {
         id: photo_panel
         bottom_anchor: buttons.height + padding
-        top_anchor: learning_btn_grp.height + padding
+        top_anchor: 0
         padding: padding
+
+        onImageChanged: {
+            img_info.set_image_info(name);
+        }
     }
 
-    BtnGroup {
-        id: learning_btn_grp
+    ImageInfoPanel {
+        id: img_info
         height: parent.height / 10
         text_size: text_size
         margin: parent.height / 60
         padding: padding
-        btn_1_text: "Reco ok"
-        btn_2_text: "Reco fail"
+        visible: false
         y: padding
 
-        visible: true
-
-        onBtn_1_pressed: {
-            photo_panel.take_photo()
-        }
-        onBtn_2_pressed: {
-            learning_btn_grp.visible = false;
+        onFailBtnPressed: {
+            img_info.visible = false;
             human_name_edt.visible = true;
             human_name_edt.init("Input name")
         }
@@ -65,7 +66,8 @@ Window {
         onBtn_ok_pressed: {
             photo_panel.update_name(text)
             human_name_edt.visible = false
-            learning_btn_grp.visible = true
+            img_info.visible = true
+            img_info.set_image_info(text)
         }
     }
 
@@ -79,6 +81,12 @@ Window {
         btn_2_text: "Close"
 
         onBtn_1_pressed: {
+            if (container.first_run) {
+                container.first_run = false
+                photo_panel.top_anchor = img_info.height + padding
+                img_info.visible = true
+            }
+
             photo_panel.take_photo()
         }
         onBtn_2_pressed: {
