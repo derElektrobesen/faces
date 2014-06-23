@@ -15,6 +15,7 @@
 \newcommand*\rot{\rotatebox{90}}
 
 \usepackage{xr}
+\usepackage{url}
 \usepackage{verbatimbox}
 \usepackage{caption}
 \usepackage{graphicx}
@@ -93,19 +94,17 @@ n=0 это chapter.
 \begin{document}
 	\input{titlepage}
 	\tableofcontents
-    \newpage
-    \input{economic}
 	\newpage
-    \input{bjd}
-%	\input{intro}	
-%	\input{analizis}
-%	\input{constructs}
+	\input{intro}	
+    \input{analit}
+	\input{constructs}
 %	\input{tehno}
 %	\input{conclusion}
 %	\input{appendix}
+    \input{bjd}
 	\newpage
     \bibliographystyle{plain}
-	%\addcontentsline{toc}{section}{\bibname}
-	%\nocite{*}
-	%\bibliography{biblio}
+	\addcontentsline{toc}{section}{\bibname}
+	\nocite{*}
+	\bibliography{biblio}
 \end{document}

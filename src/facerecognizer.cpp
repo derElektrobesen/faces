@@ -501,12 +501,21 @@ FaceRecognizer::FaceRecognizer(QObject *parent) :
 }
 
 #ifdef STORE_INTERMIDATE_IMAGES
-inline static void store_converted_image(const QVector< uchar > &data, const char *name) {
-    int s = qFloor(qSqrt(data.size()));
-    QImage image(&data[0], s, s, QImage::Format_Indexed8);
+inline static void store_converted_image_w(const QVector< uchar > &data, const char *name, int w, int h) {
+    QImage image(data.data(), w, h, QImage::Format_Indexed8);
     STORE_DEBUG_IMAGE(&image, name);
 }
+
+inline static void store_converted_image(const QVector< uchar > &data, const char *name) {
+    float wf = qSqrt(data.size());
+    if ((float)qFloor(wf) != qSqrt(data.size())) {
+        qDebug() << "Input vector is not square";
+        return;
+    }
+    return store_converted_image_w(data, name, (int)wf, (int)wf);
+}
 #else
+#   define store_converted_image_w(data, name, w, h)
 #   define store_converted_image(data, name)
 #endif
 
@@ -520,6 +529,10 @@ void FaceRecognizer::recognize(const QImage &in_img, QImage &out_img) {
     out = &out_img;
     QImage gray_image;
     prepare_image(&in_img, &gray_image);
+
+    if (in_img.format() == QImage::Format_Indexed8)
+        out_img = in_img.convertToFormat(QImage::Format_ARGB32);
+
     recognize_face(DEFAULT_RECO_FACTOR, faces);
     qDebug() << faces;
 
@@ -745,12 +758,16 @@ void FaceRecognizer::convert_to_grayscale(QImage *img) {
     uchar gray;
 
     pixels.resize(w * h);
-    for (int j = 0; j < h; j++)
-        for (int i = 0; i < w; i++) {
-            gray = qGray(img->pixel(i, j));
-            pixels[j * w + i] = gray;
-            img->setPixel(i, j, qRgb(gray, gray, gray));
-        }
+
+    if (img->depth() == 8) /* Already grayscaled */
+        memcpy(pixels.data(), img->bits(), w * h);
+    else
+        for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++) {
+                gray = qGray(img->pixel(i, j));
+                pixels[j * w + i] = gray;
+                img->setPixel(i, j, qRgb(gray, gray, gray));
+            }
     STORE_DEBUG_IMAGE(img, "default_grayscaled");
 }
 

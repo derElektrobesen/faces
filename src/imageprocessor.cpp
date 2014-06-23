@@ -6,7 +6,7 @@ ImageProcessor::ImageProcessor(QObject *parent) :
 {
 #ifndef PROCESS_RANDOM_IMAGE
     DECLARE_SQL_CON(q);
-    q.exec("select name from test_images order by id");
+    q.exec("select name from test_images order by id limit 20");
     while (q.next())
         images_paths.push_back(q.value(0).toString());
     last_image = -1;
