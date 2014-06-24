@@ -35,12 +35,14 @@ protected:
     fann *load_fann_db(int name_id);
     void store_fann_db(const fann *ann, int name_id);
 
-    fann *create_new_neuronet(const QString &name);
     void load_people();
 
     bool set_filter(const QImage *img, QVector< uchar > &out, reco_filter_type_t f_type);
     QString neuro_search(const QVector<uchar> &data);
 
+#ifndef USE_SINGLE_NEURONET
+    fann *create_new_neuronet(const QString &name);
+#endif
 private:
     HaarCascade data;
     QImage *out;
@@ -50,7 +52,12 @@ private:
     QVector< uint > matrix_of_squares;
     QVector< uchar > pixels;
 
+#ifndef USE_SINGLE_NNET
     QMap< QString, QPair< bool, fann * > > nets;
+#else
+    fann *ann;
+    bool ann_changed;
+#endif
     QMap< QString, int > people;
 
     QVector< uchar > last_recognized_face;

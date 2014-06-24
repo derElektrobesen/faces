@@ -1,0 +1,174 @@
+\documentclass[a4paper]{article}
+
+\usepackage[12pt]{extsizes}
+
+\usepackage{mathtext}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage[english,russian]{babel}
+
+\usepackage{indentfirst}
+\usepackage{scrextend}
+\usepackage{fancyhdr}
+\newcommand*\rot{\rotatebox{90}}
+
+\usepackage{xr}
+\usepackage{url}
+\usepackage{verbatimbox}
+\usepackage{caption}
+\usepackage{graphicx}
+
+\usepackage{gensymb}
+\usepackage{tabu}
+
+\usepackage{listings}
+\usepackage{color}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\lstset{extendedchars=\true,
+		breaklines=true,
+		breakatwhitespace=true,
+		captionpos=b,
+		keepspaces=true,
+		keywordstyle=\color{blue},
+		numbers=left,
+		tabsize=4,
+		numberstyle=\tiny\color{mygray},
+		commentstyle=\color{mygreen},
+		language=C,
+		basicstyle=\ttfamily,
+		showstringspaces=false,
+		title=\lstname
+		}
+ 
+\usepackage{geometry} % Меняем поля страницы
+\geometry{left=2.8cm}% левое поле
+\geometry{right=2.8cm}% правое поле
+\geometry{top=2.5cm}% верхнее поле
+\geometry{bottom=3cm}% нижнее поле
+
+\usepackage{perpage}
+\usepackage{placeins} % for float barriers
+\usepackage{float}
+\MakePerPage{footnote}
+
+\setcounter{tocdepth}{2}
+\ifx
+Выставление глубины оглавления
+n=4 это chapter, section, subsection, subsubsection и paragraph;
+n=3 это chapter, section, subsection и subsubsection;
+n=2 это chapter, section, и subsection;
+n=1 это chapter и section;
+n=0 это chapter.
+\fi
+
+\renewcommand*\thesection{\arabic{section}.}
+\renewcommand{\thesubsection}{\thesection\arabic{subsection}}
+\renewcommand{\thetable}{\thesection\arabic{table}}
+\renewcommand{\theequation}{\thesection\arabic{equation}}
+
+\newcommand{\newpar}{\par\medskip}
+\usepackage{multirow,tabularx}
+
+\newcommand{\sbt}{
+	\,\begin{picture}(-1,1)(-1,-3)\circle*{4}\end{picture}\ 
+}
+\newcommand{\sbti}{\sbt~~}
+
+\newcommand{\linux}{Linux}
+\newcommand{\linuxv}{\linux\ v.3.9.2\ }
+\newcommand{\gnu}{GNU}
+\newcommand{\gnulinux}{\gnu/\linux}
+\newcommand{\archlinux}{Arch Linux}
+\newcommand{\fulllinux}{\archlinux, ядро \linuxv}
+\newcommand{\unix}{UNIX\ }
+
+\newcommand{\linuxpath}[1]{\texttt{#1}}
+\newcommand{\linuxutil}[1]{\texttt{#1}}
+\newcommand{\linuxcommand}[1]{\texttt{#1}}
+\newcommand{\src}[1]{\linuxcommand{#1}}
+\newcommand{\key}[1]{\src{<#1>}}
+
+\begin{document}
+\setlength{\parskip}{0.3cm}
+\thispagestyle{empty}
+
+\begin{center}
+    \textbf{Рецензия} \\
+    на квалификационную работу бакалавра по специальности \\
+    <<Программное обеспечение ЭВМ и информационные технологии>> \\
+    студента МГТУ~им.~Н.\,Э.\,Баумана \\
+    Бережного Павла Юрьевича \\
+    на тему: <<Распознавание человеческого лица по фотоснимку на мобильной \\
+    платформе под управлением ОС Android>>.
+\end{center}
+\vspace{0.5cm}
+
+Рецензируемая дипломная работа посвящена разработке алгоритма обнаружения и распознавания лиц и его программной реализации.
+Направление распознавания лиц является востребованным в связи с возросшей актуальностью повышения информационной
+безопасности инфокоммуникационных систем.
+
+Пояснительная записка к дипломной работе состоит из технического задания, календарного плана, введения, четырёх основных
+частей, заключения и списка литературы. В аналитическом разделе произведена постановка задачи, выполнен анализ предметной области,
+анализ известных методов обнаружения и распознавания и обоснован выбор методов, используемых в комбинированном подходе.
+
+В конструкторском разделе приведены описания выбранных методов обнаружения и распознавания лиц. Раздел оформлен правильно
+и богат на иллюстрации. Алгоритмы описываются и словами, и с помощью блок-схем. Благодаря этому все алгоритмы просты для
+понимания.
+
+В технологическом разделе приведены обоснование выбранных средств и технологий разработки, диаграммы классов, требования к архитектуре и описание процесса
+тестирования разработанного программного комплекса.
+
+В исследовательском разделе описаны эксперименты, исследующие скорость, точность
+и полноту обнаружения и распознавания лиц. Результаты экспериментов показывают то, что разработанное
+решение работает и показаны преимущества разработанного решения над существующими.
+
+Заключение дипломной работы кратко подводит итоги работы и описывает 
+перспективы ее развития. В заключении приведены обоснованные выводы по работе. 
+
+Большой размер списка использованной при написании дипломной работы 
+литературы говорит о высоком качестве работы. Список использованной литературы 
+состоит как из русскоязычных, так и из иностранных источников, что показывает 
+высокую степень проработанности и изучения темы работы. 
+
+Дипломная работа грамотно оформлена, соответствует стандартам ГОСТ. Она 
+содержит большое количество табличного и иллюстративного материала, что 
+позволяет более наглядно раскрыть ее основные результаты. 
+
+Наряду с указанными достоинствами, дипломная работа не лишена недостатков. 
+В качестве основного недостатка можно отметить то, что разработанный алгоритм распознавания
+лиц не позволяет работать с фотоснимками, на которых запечатлены несколько человек.
+Однако данный недостаток описывается автором и не носит существенного характера.
+
+Представленная работа выполнена полностью в 
+соответствии с предъявляемыми требованиями. Разработанный алгоритм успешно
+находит и идентифицирует человека, изображенного на фотоснимке. Автор демонстрирует умение 
+глубоко исследовать тему и конструировать собственные алгоритмы для решения 
+возникающих задач.
+
+В целом можно заключить, что дипломная работа Бережного Павла Юрьевича
+рекомендована к защите и заслуживает оценки <<отлично>>, а её автор, Бережной Павел Юрьевич,
+присвоения степени бакалавра техники и технологий.
+\thispagestyle{empty}
+
+\vspace{10cm}
+
+\begin{flushleft}
+    Рецензент:\\
+    кандидат технических наук, \\
+    технический директор Почты@Mail.Ru \\
+    \begin{tabular}{cc}
+        \underline{\hspace{4cm}} & Аникин~Д.\,Ю. \\
+        (подпись) & (Ф.\,И.\,О.)
+    \end{tabular}
+
+    \vspace{2cm}
+    \begin{tabular}{cc}
+        Подпись Аникина~Д.\,Ю. удостоверяю & \underline{\hspace{7cm}} \\
+                                           & Начальник отдела кадров \\
+                                           & ООО <<Мэйл.Ру>> Сидорова~О.\,В.
+\end{tabular}
+\end{flushleft}
+\end{document}

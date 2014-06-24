@@ -78,7 +78,7 @@ QVector<QVector<double> > dwt2(const QVector<QVector<double> >&image,
     }
 
     QVector<QVector<double> > result(imageT);
-#if 1
+#if 0
     for (int i = 0, k = 0; i < height; i += 2, k++)
         for (int j = 0, l = 0; j < width; j += 2, l++) {
             result[k][l] = imageT[i][j];
@@ -89,8 +89,8 @@ QVector<QVector<double> > dwt2(const QVector<QVector<double> >&image,
 #else
     for (int i = 0, k = 0; i < height; i += 2, k++) {
         for (int j = 0, l = 0; j < width; j += 2, l++) {
-            result[k][l] = image[i + 1][j]; // 1
-//            result[k][l] = image[i][j]; // 2
+//            result[k][l] = image[i + 1][j]; // 1
+            result[k][l] = image[i][j]; // 2
 //            result[k][l] = image[i][j + 1]; // 3
 //            result[k][l] = image[i+1][j+1]; // 4
 

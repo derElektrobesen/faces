@@ -6,7 +6,7 @@ ImageProcessor::ImageProcessor(QObject *parent) :
 {
 #ifndef PROCESS_RANDOM_IMAGE
     DECLARE_SQL_CON(q);
-    q.exec("select t.path, n.name from test_images t join names n on n.id = t.name_id order by id");
+    q.exec("select t.path, n.name from test_images t join names n on n.id = t.name_id order by t.id");
     while (q.next())
         images_paths.push_back(qMakePair(q.value(0).toString(), q.value(1).toString()));
     last_image = -1;
@@ -93,7 +93,7 @@ void ImageProcessor::global_learn() {
     DECLARE_SQL_CON(q);
     q.exec("select t.path, n.name, t.id from test_images t join names n on n.id = t.name_id "
            "where t.id > 0 "
-           "order by t.id");
+           "order by random()");
 
     QImage out;
     QString name;
@@ -109,6 +109,7 @@ void ImageProcessor::global_learn() {
         if (!recognizer.recognize(img, out, name))
             continue;
 
+        qDebug() << "Recognized:" << name << "; real name:" << q.value(1).toString();
         recognizer.update_name(q.value(1).toString());
 
         if (i++ > 10) {
