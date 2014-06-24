@@ -21,15 +21,16 @@ public:
     explicit FaceRecognizer(QObject *parent = 0);
     ~FaceRecognizer();
 
-    void recognize(const QImage &in_img, QImage &out_img);
+    bool recognize(const QImage &in_img, QImage &out_img, QString &name);
     void update_name(const QString &new_name);
+    void store_neuro_networks();
 
 protected:
     void recognize_face(double factor, QVector<QRect> &faces);
     void convert_to_grayscale(QImage *img);
     void prepare_image(const QImage *img, QImage *gray_image);
     void draw_rect(const QRect &rect, QImage *img, QColor color);
-    bool choose_rect(const QVector<QRect> &recognized_faces, QImage *new_image, const QImage *gray_image);
+    QRect choose_rect(const QVector<QRect> &recognized_faces, QImage *new_image, const QImage *gray_image);
 
     fann *load_fann_db(int name_id);
     void store_fann_db(const fann *ann, int name_id);

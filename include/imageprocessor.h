@@ -23,6 +23,7 @@ public:
 
 signals:
     void imageChanged(const QString &imageId, const QString &name);
+    void imageRecognized(const QString &name);
 
 public slots:
     void process_image(const QString &path);
@@ -32,10 +33,14 @@ public slots:
     void update_name(const QString &new_name);
 
 protected:
-    void recognize(const QString &imageId, const QImage &img);
+    QString recognize(const QString &imageId, const QImage &img);
     void set_image(const QString &imageId, const QImage &img, const QString &name = "");
 
     void register_provider();
+
+#ifdef DB_LEARN_MODE
+    void global_learn();
+#endif
 
 private:
     ImageProvider img_provider;
@@ -44,7 +49,7 @@ private:
     FaceRecognizer recognizer;
 
 #ifndef PROCESS_RANDOM_IMAGE
-    QVector< QString > images_paths;
+    QVector< QPair< QString, QString > > images_paths;
     int last_image;
 #else
     QString last_name;

@@ -35,6 +35,13 @@ Window {
         onImageChanged: {
             img_info.set_image_info(name);
         }
+
+        onImageRecognized: {
+            name_viewer.text = name;
+            name_viewer_wrapper.width = name_viewer.width + 2 * padding;
+            name_viewer_wrapper.visible = true
+            name_viewer.visible = true
+        }
     }
 
     ImageInfoPanel {
@@ -92,5 +99,34 @@ Window {
         onBtn_2_pressed: {
             Qt.quit()
         }
+    }
+
+    Rectangle {
+        id: name_viewer_wrapper
+
+        anchors.horizontalCenter: photo_panel.horizontalCenter
+        y: photo_panel.y + photo_panel.height - text_size - padding
+        height: text_size + 4
+        visible: false
+
+        smooth: true
+        opacity: 0.7
+        radius: 3
+
+        border.width: 1
+        border.color: "#2a2c2f"
+        color: "black"
+    }
+
+    Text {
+        id: name_viewer
+        anchors.horizontalCenter: name_viewer_wrapper.horizontalCenter
+        anchors.verticalCenter: name_viewer_wrapper.verticalCenter
+
+        font.pixelSize: text_size
+        visible: false
+        opacity: 0.9
+
+        color: "yellow"
     }
 }

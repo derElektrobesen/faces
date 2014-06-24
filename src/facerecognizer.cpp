@@ -1,4 +1,5 @@
 #include "facerecognizer.h"
+#include <float.h>
 
 #ifdef STORE_INTERMIDATE_IMAGES
 #   define STORE_DEBUG_IMAGE(__img__, __name__) \
@@ -259,8 +260,8 @@ fann *FaceRecognizer::load_fann_db(int name_id) {
 fann *FaceRecognizer::create_new_neuronet(const QString &name) {
     fann *net = fann_create_standard(3,
                     DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE,
-                    DEFAULT_FACE_RECT_SIZE,
-                    2);
+                    DEFAULT_FACE_RECT_SIZE * 4,
+                    1);
     if (!net) {
         qDebug() << "fann_create_standard failure";
         return NULL;
@@ -269,8 +270,22 @@ fann *FaceRecognizer::create_new_neuronet(const QString &name) {
     fann_set_activation_function_output(net, FANN_SIGMOID_SYMMETRIC);
 
     DECLARE_SQL_CON(q);
-    q.prepare("insert into neuro_networks(name) values (?)");
-    q.bindValue(0, name);
+
+    int id = -1;
+    q.exec("select id from names where name = '" + name + "'");
+    if (q.next())
+        id = q.value(0).toInt();
+    else {
+        q.finish();
+        q.prepare("insert into names(name) values (?)");
+        q.bindValue(0, name);
+        q.exec();
+        id = q.lastInsertId().toInt();
+    }
+    q.finish();
+
+    q.prepare("insert into neuro_networks(name_id) values (?)");
+    q.bindValue(0, id);
     q.exec();
 
     nets[name] = qMakePair(false, net);
@@ -453,28 +468,35 @@ void FaceRecognizer::store_fann_db(const fann *ann, int name_id) {
     q.exec("commit");
 }
 
-FaceRecognizer::~FaceRecognizer() {
+void FaceRecognizer::store_neuro_networks() {
     for (auto it = nets.begin(); it != nets.end(); it++) {
         if (it.value().first) {
             /* Net changed */
 #ifdef STORE_NNET_IN_F
-            fann_save(it.value().second, (QString(WORK_DIR "/") + it.key() + ".net").toUtf8());
+            fann_save(it.value().second, (QString(WORK_DIR "/" NET_PREFIX) +
+                                          QString::number(people[it.key()]) + ".net").toUtf8());
 #else
             store_fann_db(it.value().second, people[it.key()]);
 #endif
+            it.value().first = false;
         }
-        fann_destroy(it.value().second);
     }
     qDebug() << "Neuro networks storred";
 }
 
+FaceRecognizer::~FaceRecognizer() {
+    store_neuro_networks();
+    for (auto it = nets.begin(); it != nets.end(); it++)
+        fann_destroy(it.value().second);
+}
+
 void FaceRecognizer::load_people() {
     DECLARE_SQL_CON(q);
-    q.exec("select id, name from neuro_networks");
+    q.exec("select nn.id, n.name from neuro_networks nn join names n on n.id = nn.name_id");
 
     while (q.next()) {
 #ifdef STORE_NNET_IN_F
-        fann *ann = fann_create_from_file((QString(WORK_DIR "/") + q.value(1).toString() + ".net").toUtf8());
+        fann *ann = fann_create_from_file((QString(WORK_DIR "/" NET_PREFIX) + q.value(0).toString() + ".net").toUtf8());
 #else
         fann *ann = load_fann_db(q.value(0).toInt());
 #endif
@@ -519,11 +541,13 @@ inline static void store_converted_image(const QVector< uchar > &data, const cha
 #   define store_converted_image(data, name)
 #endif
 
-void FaceRecognizer::recognize(const QImage &in_img, QImage &out_img) {
+bool FaceRecognizer::recognize(const QImage &in_img, QImage &out_img, QString &name) {
     QVector< QRect > faces;
+    name = "Unknown";
+
     if (in_img.isNull()) {
         qDebug() << "Null image given";
-        return;
+        return false;
     }
 
     out = &out_img;
@@ -536,57 +560,63 @@ void FaceRecognizer::recognize(const QImage &in_img, QImage &out_img) {
     recognize_face(DEFAULT_RECO_FACTOR, faces);
     qDebug() << faces;
 
-#ifdef DEBUG
+#ifdef DRAW_RED_RECTS
     for (auto r = faces.begin(); r != faces.end(); r++)
         draw_rect(*r, out, Qt::red);
 #endif
-
-    QImage face;
-    choose_rect(faces, &face, &gray_image);
+    if (faces.size()) {
+        QImage face;
+        choose_rect(faces, &face, &gray_image);
 
 #if 0
-    /* Debug filters saving */
-    QVector< uchar > out_pixels;
-    set_filter(&face, out_pixels, HOAR_FILTER);
-    store_converted_image(out_pixels, "dobeshi_1");
-    set_filter(&face, out_pixels, D4_FILTER);
-    store_converted_image(out_pixels, "dobeshi_2");
-    set_filter(&face, out_pixels, D6_FILTER);
-    store_converted_image(out_pixels, "dobeshi_3");
-    set_filter(&face, out_pixels, D10_FILTER);
-    store_converted_image(out_pixels, "dobeshi_4");
+        /* Debug filters saving */
+        QVector< uchar > out_pixels;
+        set_filter(&face, out_pixels, HOAR_FILTER);
+        store_converted_image(out_pixels, "dobeshi_1");
+        set_filter(&face, out_pixels, D4_FILTER);
+        store_converted_image(out_pixels, "dobeshi_2");
+        set_filter(&face, out_pixels, D6_FILTER);
+        store_converted_image(out_pixels, "dobeshi_3");
+        set_filter(&face, out_pixels, D10_FILTER);
+        store_converted_image(out_pixels, "dobeshi_4");
 #endif
+        set_filter(&face, last_recognized_face, D6_FILTER);
+        name = neuro_search(last_recognized_face);
 
-    set_filter(&face, last_recognized_face, D6_FILTER);
-    QString name = neuro_search(last_recognized_face);
-    qDebug() << name;
+        return true;
+    }
+    return false;
 }
 
 QString FaceRecognizer::neuro_search(const QVector< uchar > &data) {
     static float f_data[DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE];
+    QString name = "Unknown";
     if (st_arr_len(f_data) != data.size()) {
         qDebug() << "Something happens wrong: Incorrect input array length";
-        return "";
+        return name;
     }
 
     const uchar *i_data = data.data();
     for (size_t i = 0; i < st_arr_len(f_data); i++)
         f_data[i] = 1.0 * i_data[i];
 
+    QPair< QString, float > max = qMakePair(name, -FLT_MAX);
     for (auto it = nets.begin(); it != nets.end(); it++) {
         float *out = fann_run(it.value().second, f_data);
-        qDebug() << it.key() << out[0] << out[1];
+        qDebug() << it.key() << out[0];
+        if (max.second < *out)
+            max = qMakePair(it.key(), *out);
     }
-    return "";
+    return max.first;
 }
 
 /*
  * Only one face per image expected.
  * TODO
  */
-bool FaceRecognizer::choose_rect(const QVector< QRect > &recognized_faces, QImage *new_image, const QImage *gray_image) {
+QRect FaceRecognizer::choose_rect(const QVector< QRect > &recognized_faces, QImage *new_image, const QImage *gray_image) {
     if (!recognized_faces.size())
-        return false;
+        return QRect();
 
     QRect last_rect = recognized_faces.first();
 
@@ -615,7 +645,7 @@ bool FaceRecognizer::choose_rect(const QVector< QRect > &recognized_faces, QImag
     for (auto pix = data; pix != end_ptr; pix++, pix_ptr++)
         *pix_ptr = (uchar)(*pix & 0xff);
 
-    return true;
+    return last_rect;
 }
 
 inline static uint f_sum(const QVector< uint > &matrix, const QImage *img,
@@ -872,7 +902,7 @@ inline static bool update_neuronet(fann *ann, const uchar *data, size_t count) {
     for (size_t i = 0; i < count; i++)
         f_data[i] = 1.0 * data[i];
 
-    float results[] = { 1.0f, -1.0f };
+    float results[] = { 1.0 };
     fann_train(ann, f_data, results);
     return true;
 }

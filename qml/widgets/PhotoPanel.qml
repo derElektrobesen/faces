@@ -14,6 +14,7 @@ Item {
     anchors.horizontalCenter: parent.horizontalCenter
 
     signal imageChanged(string name);
+    signal imageRecognized(string name);
 
     x: margin
     y: margin + top_anchor
@@ -99,6 +100,9 @@ Item {
         onImageChanged: {
             set_photo(imageId);
             container.imageChanged(name);
+        }
+        onImageRecognized: {
+            container.imageRecognized(name);
         }
     }
 }

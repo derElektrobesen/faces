@@ -6,10 +6,15 @@ ImageProcessor::ImageProcessor(QObject *parent) :
 {
 #ifndef PROCESS_RANDOM_IMAGE
     DECLARE_SQL_CON(q);
-    q.exec("select path from test_images order by id limit 20");
+    q.exec("select t.path, n.name from test_images t join names n on n.id = t.name_id order by id");
     while (q.next())
-        images_paths.push_back(q.value(0).toString());
+        images_paths.push_back(qMakePair(q.value(0).toString(), q.value(1).toString()));
     last_image = -1;
+#endif
+
+#ifdef DB_LEARN_MODE
+    qDebug() << "Global learning";
+    global_learn();
 #endif
 }
 
@@ -57,10 +62,10 @@ void ImageProcessor::set_random_image() {
 #else
     if (++last_image >= images_paths.size())
         last_image = 0;
-    QImage img(images_paths[last_image]);
+    QImage img(images_paths[last_image].first);
     last_path = QString::number(last_image);
-    set_image(last_path, img);
-    qDebug() << "Image path:" << images_paths[last_image];
+    set_image(last_path, img, images_paths[last_image].second);
+    qDebug() << "Image path:" << images_paths[last_image].first;
 #endif
 
 }
@@ -83,13 +88,50 @@ void ImageProcessor::register_provider() {
         engine->addImageProvider(PROVIDER_HOST, &img_provider);
 }
 
-void ImageProcessor::recognize(const QString &imageId, const QImage &img) {
+#ifdef DB_LEARN_MODE
+void ImageProcessor::global_learn() {
+    DECLARE_SQL_CON(q);
+    q.exec("select t.path, n.name, t.id from test_images t join names n on n.id = t.name_id "
+           "where t.id > 0 "
+           "order by t.id");
+
+    QImage out;
+    QString name;
+    int i = 0;
+    while (q.next()) {
+        /* Process all images */
+        QImage img(q.value(0).toString());
+        if (img.isNull()) {
+            qDebug() << "Image" << q.value(0).toString() << "openning failure";
+            continue;
+        }
+
+        if (!recognizer.recognize(img, out, name))
+            continue;
+
+        recognizer.update_name(q.value(1).toString());
+
+        if (i++ > 10) {
+            i = 0;
+            recognizer.store_neuro_networks();
+        }
+
+        qDebug() << "Last recognizer id:" << q.value(2).toInt();
+    }
+    q.finish();
+}
+#endif
+
+QString ImageProcessor::recognize(const QString &imageId, const QImage &img) {
     QImage result(img);
-    recognizer.recognize(img, result);
+    QString name;
+    recognizer.recognize(img, result, name);
 #ifndef PROCESS_RANDOM_IMAGE
-    QString last_name = "Unknown";
+    QString last_name = images_paths[last_image].second;
 #endif
     set_image(imageId + "_recognized", result, last_name);
+    emit imageRecognized(name);
+    return name;
 }
 
 void ImageProcessor::update_name(const QString &new_name) {
