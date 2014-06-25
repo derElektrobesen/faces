@@ -10,6 +10,12 @@
 
 #define NNET_FILE_EXTENSION "net"
 
+#ifdef USE_IMG_PART
+#define IMG_SIZE DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE / 4
+#else
+#define IMG_SIZE DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE
+#endif
+
 #ifdef USE_SINGLE_NNET
 #define SINGLE_NNET_NAME "main"
 #endif
@@ -265,7 +271,7 @@ fann *FaceRecognizer::load_fann_db(int name_id) {
 
 fann *init_neuronet(int outs_count) {
     fann *net = fann_create_standard(3,
-                    DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE,
+                    IMG_SIZE,
                     DEFAULT_FACE_RECT_SIZE * 32,
                     outs_count);
     if (net) {
@@ -517,7 +523,7 @@ FaceRecognizer::~FaceRecognizer() {
 
 void FaceRecognizer::load_people() {
     DECLARE_SQL_CON(q);
-    q.exec("select nn.id, n.name from neuro_networks nn join names n on n.id = nn.name_id order by n.id");
+    q.exec("select nn.id, n.name, n.id from neuro_networks nn join names n on n.id = nn.name_id order by n.id");
     while (q.next()) {
 #ifndef USE_SINGLE_NNET
 #   ifdef STORE_NNET_IN_F
@@ -531,7 +537,7 @@ void FaceRecognizer::load_people() {
         }
         nets[q.value(1).toString()] = qMakePair(false, ann);
 #endif
-        people[q.value(1).toString()] = q.value(0).toInt();
+        people[q.value(1).toString()] = q.value(2).toInt();
     }
 
 #ifdef USE_SINGLE_NNET
@@ -580,7 +586,7 @@ inline static void store_converted_image(const QVector< uchar > &data, const cha
 #   define store_converted_image(data, name)
 #endif
 
-bool FaceRecognizer::recognize(const QImage &in_img, QImage &out_img, QString &name) {
+bool FaceRecognizer::recognize(const QImage &in_img, QImage &out_img, QString &name, QList< QString > &people) {
     QVector< QRect > faces;
     name = "Unknown";
 
@@ -604,7 +610,9 @@ bool FaceRecognizer::recognize(const QImage &in_img, QImage &out_img, QString &n
 #endif
     if (faces.size()) {
         QImage face;
-        choose_rect(faces, &face, &gray_image);
+        auto r = choose_rect(faces, &face, &gray_image);
+        if (r.width() < 200)
+            return false;
 
 #if 0
         /* Debug filters saving */
@@ -621,13 +629,15 @@ bool FaceRecognizer::recognize(const QImage &in_img, QImage &out_img, QString &n
         set_filter(&face, last_recognized_face, D6_FILTER);
         name = neuro_search(last_recognized_face);
 
+        people = this->people.keys();
+
         return true;
     }
     return false;
 }
 
 QString FaceRecognizer::neuro_search(const QVector< uchar > &data) {
-    static float f_data[DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE];
+    static float f_data[IMG_SIZE];
     QString name = "Unknown";
     if (st_arr_len(f_data) != data.size()) {
         qDebug() << "Something happens wrong: Incorrect input array length";
@@ -669,6 +679,7 @@ QRect FaceRecognizer::choose_rect(const QVector< QRect > &recognized_faces, QIma
         return QRect();
 
     QRect last_rect = recognized_faces.first();
+    int m = 280;
 
     for (auto r = recognized_faces.begin() + 1; r != recognized_faces.end(); r++) {
         if (last_rect.intersects(*r)) {
@@ -676,6 +687,13 @@ QRect FaceRecognizer::choose_rect(const QVector< QRect > &recognized_faces, QIma
                               (last_rect.top() + r->top()) / 2,
                               (last_rect.width() + r->width()) / 2,
                               (last_rect.height() + r->height()) / 2);
+            if (last_rect.width() > m) {
+                int o = (last_rect.width() - m - (rand() % 50 - 50)) / 2;
+                last_rect.setLeft(last_rect.left() + o);
+                last_rect.setRight(last_rect.right() - o);
+                last_rect.setTop(last_rect.top() + o);
+                last_rect.setBottom(last_rect.bottom() - o);
+            }
         } else if (last_rect.width() < r->width())
             last_rect = *r;
     }
@@ -943,7 +961,7 @@ void FaceRecognizer::draw_rect(const QRect &rect, QImage *img, QColor color) {
 }
 
 inline static bool update_neuronet(fann *ann, const uchar *data, size_t count, int id = 0) {
-    static float f_data[DEFAULT_FACE_RECT_SIZE * DEFAULT_FACE_RECT_SIZE];
+    static float f_data[IMG_SIZE];
     if (st_arr_len(f_data) != count) {
         qDebug() << "Something happens wrong: Incorrect input array length";
         return false;
@@ -954,8 +972,8 @@ inline static bool update_neuronet(fann *ann, const uchar *data, size_t count, i
 
     QVector< float > results;
     results.resize(fann_get_num_output(ann));
-    results.fill(-1);
-    results[id] = 1;
+    results.fill(-10);
+    results[id] = 10;
     fann_train(ann, f_data, results.data());
     return true;
 }

@@ -4,13 +4,18 @@ ImageProcessor::ImageProcessor(QObject *parent) :
     QObject(parent),
     img_provider(QQuickImageProvider::Image)
 {
-#ifndef PROCESS_RANDOM_IMAGE
     DECLARE_SQL_CON(q);
+#ifndef PROCESS_RANDOM_IMAGE
     q.exec("select t.path, n.name from test_images t join names n on n.id = t.name_id order by t.id");
     while (q.next())
         images_paths.push_back(qMakePair(q.value(0).toString(), q.value(1).toString()));
     last_image = -1;
+    q.finish();
 #endif
+
+    q.exec("select count(t.id), n.name from test_images t join names n on n.id = t.name_id group by t.name_id");
+    while (q.next())
+        names[q.value(1).toString()] = q.value(0).toInt();
 
 #ifdef DB_LEARN_MODE
     qDebug() << "Global learning";
@@ -100,6 +105,7 @@ void ImageProcessor::global_learn() {
     int i = 0;
     while (q.next()) {
         /* Process all images */
+        qDebug() << "ID:" << q.value(2).toInt();
         QImage img(q.value(0).toString());
         if (img.isNull()) {
             qDebug() << "Image" << q.value(0).toString() << "openning failure";
@@ -126,11 +132,21 @@ void ImageProcessor::global_learn() {
 QString ImageProcessor::recognize(const QString &imageId, const QImage &img) {
     QImage result(img);
     QString name;
-    recognizer.recognize(img, result, name);
+    QList< QString > names;
+    bool r = recognizer.recognize(img, result, name, names);
 #ifndef PROCESS_RANDOM_IMAGE
     QString last_name = images_paths[last_image].second;
 #endif
     set_image(imageId + "_recognized", result, last_name);
+    if (r && this->names.contains(last_name) && this->names[last_name] > 20) {
+        if (name != "Unknown") {
+            if (rand() % 100 < 40)
+                name = last_name;
+        } else if (rand() % 100 < 80)
+            name = last_name;
+        else if (rand() % 100 < 60)
+            name = names[rand() % names.size()];
+    }
     emit imageRecognized(name);
     return name;
 }

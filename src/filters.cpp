@@ -78,7 +78,7 @@ QVector<QVector<double> > dwt2(const QVector<QVector<double> >&image,
     }
 
     QVector<QVector<double> > result(imageT);
-#if 0
+#ifndef USE_IMG_PART
     for (int i = 0, k = 0; i < height; i += 2, k++)
         for (int j = 0, l = 0; j < width; j += 2, l++) {
             result[k][l] = imageT[i][j];
@@ -138,17 +138,28 @@ QVector<QVector<double> > invert_dwt2(const QVector<QVector<double> >&data,
     return image;
 }
 
-void save_img(const QVector<double> &data, const char *name) {
+void save_img(const QVector<QRgb> &data, const char *name) {
     int w = qSqrt(data.size());
+    QImage img((uchar *)data.data(), w, w, QImage::Format_RGB32);
+
+    img.save(name);
+}
+
+void save_img(const QVector<uchar> &data, const char *name) {
+    QVector<QRgb> image;
+    for (int i = 0; i < data.size(); ++i) {
+        image.push_back(qRgb(data[i],data[i],data[i]));
+    }
+    save_img(image, name);
+}
+
+void save_img(const QVector<double> &data, const char *name) {
     QVector<QRgb> image;
     for (int i = 0; i < data.size(); ++i) {
         uchar r = data[i] * UCHAR_MAX;
         image.push_back(qRgb(r,r,r));
     }
-
-    QImage img((uchar *)image.data(), w, w, QImage::Format_RGB32);
-
-    img.save(name);
+    save_img(image, name);
 }
 
 bool FaceRecognizer::set_filter(const QImage *img, QVector< uchar > &out, reco_filter_type_t f_type) {
@@ -197,5 +208,6 @@ bool FaceRecognizer::set_filter(const QImage *img, QVector< uchar > &out, reco_f
     for (int i = 0; i < res.length(); ++i)
         for (int j = 0; j < res[i].length(); ++j)
             out.push_back(static_cast< uchar >(res[i][j] * UCHAR_MAX));
+    save_img(out, "/tmp/test.jpg");
     return true;
 }

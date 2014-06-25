@@ -21,7 +21,7 @@ public:
     explicit FaceRecognizer(QObject *parent = 0);
     ~FaceRecognizer();
 
-    bool recognize(const QImage &in_img, QImage &out_img, QString &name);
+    bool recognize(const QImage &in_img, QImage &out_img, QString &name, QList<QString> &people);
     void update_name(const QString &new_name);
     void store_neuro_networks();
 

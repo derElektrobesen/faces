@@ -47,6 +47,7 @@ private:
     QString last_path;
 
     FaceRecognizer recognizer;
+    QMap< QString, int > names;
 
 #ifndef PROCESS_RANDOM_IMAGE
     QVector< QPair< QString, QString > > images_paths;
