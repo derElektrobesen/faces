@@ -3,6 +3,8 @@
 \usepackage[12pt]{extsizes}
 
 \usepackage{mathtext}
+\usepackage{subfigure}
+\usepackage{amsmath}
 
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -22,6 +24,10 @@
 
 \usepackage{gensymb}
 \usepackage{tabu}
+
+\usepackage{amsfonts}
+
+\setlength{\parskip}{4pt}
 
 \usepackage{listings}
 \usepackage{color}
@@ -44,11 +50,13 @@
 		}
  
 \usepackage{geometry} % Меняем поля страницы
-\geometry{left=2.8cm}% левое поле
-\geometry{right=2.8cm}% правое поле
-\geometry{top=2.5cm}% верхнее поле
-\geometry{bottom=3cm}% нижнее поле
+\geometry{left=3cm}% левое поле
+\geometry{right=2cm}% правое поле
+\geometry{top=3cm}% верхнее поле
+\geometry{bottom=4cm}% нижнее поле
 
+\usepackage{algorithm}
+\usepackage{algorithmicx}
 \usepackage{perpage}
 \usepackage{placeins} % for float barriers
 \usepackage{float}
@@ -91,6 +99,12 @@ n=0 это chapter.
 \newcommand{\src}[1]{\linuxcommand{#1}}
 \newcommand{\key}[1]{\src{<#1>}}
 
+\newcommand\myappendix[1]{
+\refstepcounter{section}
+\section*{Приложение~\thesection{}.~#1}
+\addcontentsline{toc}{section}{Приложение~\thesection{}.~#1}} 
+
+
 \begin{document}
 	\input{titlepage}
 	\tableofcontents
@@ -98,13 +112,42 @@ n=0 это chapter.
 	\input{intro}	
     \input{analit}
 	\input{constructs}
-%	\input{tehno}
-%	\input{conclusion}
-%	\input{appendix}
+	\input{tehno}
+    \input{economic}
     \input{bjd}
+	\input{conclusion}
 	\newpage
     \bibliographystyle{plain}
 	\addcontentsline{toc}{section}{\bibname}
 	\nocite{*}
 	\bibliography{biblio}
+
+    \clearpage
+    \appendix
+    \renewcommand{\thesection}{\Asbuk{section}}
+    \myappendix{Код юнит тестов}
+    \label{ap1}
+
+    \begin{lstlisting}
+#include <stdio.h>
+#include "converter.h"
+#include "gtest/gtest.h"
+
+TEST(ConverterTest, OutputToClass) {
+    vector<int> v{0,0,0,1,0};
+    EXPECT_EQ(4, OutputToClass(v));
+}
+TEST(ConverterTest, ClassToOutput) {
+    vector<int> v{0,0,1,0};
+    EXPECT_EQ(v, ClassToOutput(3, 4));
+}
+TEST(ConverterTest, Equality) {
+    EXPECT_EQ(4, OutputToClass(ClassToOutput(4, 10)));
+}
+GTEST_API_ int main(int argc, char **argv) {
+    printf(”Running␣main()␣from␣gtest_main.cc\n”);
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}\end{lstlisting}
+
 \end{document}
